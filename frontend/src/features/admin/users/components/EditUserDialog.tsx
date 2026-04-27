@@ -40,9 +40,10 @@ import { useState } from "react";
 
 interface EditUserDialogProps {
   user: User;
+  triggerClassName?: string;
 }
 
-export default function EditUserDialog({ user }: EditUserDialogProps) {
+export default function EditUserDialog({ user, triggerClassName }: EditUserDialogProps) {
   const [open, setOpen] = useState(false);
   const [updateUser, { isLoading }] = useUpdateUserMutation();
 
@@ -63,7 +64,7 @@ export default function EditUserDialog({ user }: EditUserDialogProps) {
         body: values,
       }).unwrap();
       
-      toast.success(`User "${updatedUser.name}" updated successfully`);
+      toast.success(`User "${updatedUser.data.name}" updated successfully`);
       setOpen(false);
     } catch (error: any) {
       console.error("Update user failed:", error);
@@ -74,13 +75,13 @@ export default function EditUserDialog({ user }: EditUserDialogProps) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="ghost" size="sm" className="gap-2">
+        <Button variant="ghost" size="sm" className={`gap-2 ${triggerClassName ?? ""}`}>
           <Edit className="h-4 w-4" />
           Edit
         </Button>
       </DialogTrigger>
 
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="max-w-[calc(100%-1rem)] sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Edit User</DialogTitle>
           <DialogDescription>
@@ -180,6 +181,7 @@ export default function EditUserDialog({ user }: EditUserDialogProps) {
             type="submit"
             form="edit-user-form"
             disabled={isLoading}
+            className="w-full sm:w-auto"
           >
             {isLoading ? "Updating..." : "Update User"}
           </Button>

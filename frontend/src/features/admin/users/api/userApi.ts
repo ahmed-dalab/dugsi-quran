@@ -1,5 +1,4 @@
-import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
-import type { RootState } from "@/app/store";
+import { baseApi } from "@/app/baseApi";
 import type { User } from "../types/user.types";
 
 export interface CreateUserRequest {
@@ -26,22 +25,8 @@ export interface UsersResponse {
   message: string;
   data: User[];
 }
-export const userApi = createApi({
-  reducerPath: "userApi",
-  baseQuery: fetchBaseQuery({
-    baseUrl: "http://localhost:8080/api",
-    credentials: "include",
-    prepareHeaders: (headers, { getState }) => {
-      const token = (getState() as RootState).auth.accessToken;
- console.log("userApi token:", token);
-      if (token) {
-        headers.set("Authorization", `Bearer ${token}`);
-      }
 
-      return headers;
-    },
-  }),
-  tagTypes: ["Users"],
+export const userApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     getUsers: builder.query<UsersResponse, void>({
       query: () => ({
@@ -66,7 +51,10 @@ export const userApi = createApi({
       invalidatesTags: ["Users"],
     }),
 
-    updateUser: builder.mutation<UserResponse, { id: string; body: UpdateUserRequest }>({
+    updateUser: builder.mutation<
+      UserResponse,
+      { id: string; body: UpdateUserRequest }
+    >({
       query: ({ id, body }) => ({
         url: `/users/${id}`,
         method: "PUT",
@@ -91,12 +79,13 @@ export const userApi = createApi({
       invalidatesTags: ["Users"],
     }),
   }),
+  overrideExisting: false,
 });
 
-export const { 
-  useGetUsersQuery, 
+export const {
+  useGetUsersQuery,
   useCreateUserMutation,
   useUpdateUserMutation,
   useDeleteUserMutation,
-  useToggleUserStatusMutation
+  useToggleUserStatusMutation,
 } = userApi;

@@ -1,15 +1,33 @@
 import Sidebar from "@/components/common/Sidebar";
 import Topbar from "@/components/common/Topbar";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { useState } from "react";
 import { Outlet } from "react-router";
 
 export default function AdminLayout() {
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
   return (
    <div className="min-h-screen flex">
-      <Sidebar />
-      
-      <div className="flex-1 flex flex-col">
-        <Topbar />
-        <main className="flex-1 p-6 bg-muted/30">
+      <div className="hidden md:block">
+        <Sidebar />
+      </div>
+
+      <Dialog open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
+        <DialogContent
+          showCloseButton={false}
+          className="left-0 top-0 h-dvh w-72 max-w-none -translate-y-0 -translate-x-0 rounded-none border-0 p-0 ring-0"
+        >
+          <Sidebar
+            className="h-dvh w-full shadow-none"
+            onNavigate={() => setIsMobileMenuOpen(false)}
+          />
+        </DialogContent>
+      </Dialog>
+
+      <div className="flex-1 flex min-w-0 flex-col">
+        <Topbar onOpenMenu={() => setIsMobileMenuOpen(true)} />
+        <main className="flex-1 bg-slate-100 p-4 md:p-6">
           <Outlet />
         </main>
       </div>

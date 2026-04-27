@@ -19,9 +19,10 @@ import { useState } from "react";
 
 interface DeleteUserDialogProps {
   user: User;
+  triggerClassName?: string;
 }
 
-export default function DeleteUserDialog({ user }: DeleteUserDialogProps) {
+export default function DeleteUserDialog({ user, triggerClassName }: DeleteUserDialogProps) {
   const [open, setOpen] = useState(false);
   const [deleteUser, { isLoading }] = useDeleteUserMutation();
 
@@ -39,13 +40,17 @@ export default function DeleteUserDialog({ user }: DeleteUserDialogProps) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="ghost" size="sm" className="gap-2 text-destructive hover:text-destructive">
+        <Button
+          variant="ghost"
+          size="sm"
+          className={`gap-2 text-destructive hover:text-destructive ${triggerClassName ?? ""}`}
+        >
           <Trash2 className="h-4 w-4" />
           Delete
         </Button>
       </DialogTrigger>
 
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="max-w-[calc(100%-1rem)] sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="text-destructive">Delete User</DialogTitle>
           <DialogDescription>
@@ -72,6 +77,7 @@ export default function DeleteUserDialog({ user }: DeleteUserDialogProps) {
             variant="outline"
             onClick={() => setOpen(false)}
             disabled={isLoading}
+            className="w-full sm:w-auto"
           >
             Cancel
           </Button>
@@ -79,6 +85,7 @@ export default function DeleteUserDialog({ user }: DeleteUserDialogProps) {
             variant="destructive"
             onClick={handleDelete}
             disabled={isLoading}
+            className="w-full sm:w-auto"
           >
             {isLoading ? "Deleting..." : "Delete User"}
           </Button>

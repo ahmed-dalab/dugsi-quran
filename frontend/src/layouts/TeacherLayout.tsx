@@ -1,23 +1,34 @@
+import TeacherSidebar from "@/components/common/TeacherSidebar";
+import TeacherTopbar from "@/components/common/TeacherTopbar";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { useState } from "react";
 import { Outlet } from "react-router";
 
 export default function TeacherLayout() {
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
   return (
-    <div className="min-h-screen grid grid-cols-[220px_1fr]">
-      <aside className="border-r p-4">
-        <h2 className="text-lg font-semibold">Teacher Panel</h2>
-        <nav className="mt-4 space-y-2">
-          <div>Dashboard</div>
-          <div>Books</div>
-          <div>Locations</div>
-        </nav>
-      </aside>
+    <div className="min-h-screen flex">
+      <div className="hidden md:block">
+        <TeacherSidebar />
+      </div>
 
-      <div className="flex flex-col">
-        <header className="border-b p-4">
-          <h1 className="text-xl font-bold">Teacher</h1>
-        </header>
+      <Dialog open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
+        <DialogContent
+          showCloseButton={false}
+          className="left-0 top-0 h-dvh w-72 max-w-none -translate-y-0 -translate-x-0 rounded-none border-0 p-0 ring-0"
+        >
+          <TeacherSidebar
+            className="h-dvh w-full shadow-none"
+            onNavigate={() => setIsMobileMenuOpen(false)}
+          />
+        </DialogContent>
+      </Dialog>
 
-        <main className="p-6">
+      <div className="flex-1 flex min-w-0 flex-col">
+        <TeacherTopbar onOpenMenu={() => setIsMobileMenuOpen(true)} />
+
+           <main className="flex-1 bg-slate-100 p-4 md:p-6">
           <Outlet />
         </main>
       </div>

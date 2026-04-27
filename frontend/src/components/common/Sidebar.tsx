@@ -1,30 +1,45 @@
 import { NavLink } from "react-router";
 import { 
+  BookOpen,
+  GraduationCap,
   LayoutDashboard, 
   Users, 
   Settings 
 } from "lucide-react";
-import sidebarImage from "@/assets/sidebar.png";
+import sidebarImage from "@/assets/sidebar2.png";
+import { cn } from "@/lib/utils";
 
 const navItems = [
   { path: "/admin", name: "Dashboard", icon: LayoutDashboard, end: true },
   { path: "/admin/users", name: "Users", icon: Users },
+  { path: "/admin/classes", name: "Classes", icon: BookOpen },
+  { path: "/admin/students", name: "Students", icon: GraduationCap },
   { path: "/admin/settings", name: "Settings", icon: Settings },
 ];
 
-export default function Sidebar() {
+interface SidebarProps {
+  className?: string;
+  onNavigate?: () => void;
+}
+
+export default function Sidebar({ className, onNavigate }: SidebarProps) {
   return (
-    <aside className="border-r border-sidebar-border bg-sidebar flex flex-col h-screen sticky top-0 shadow-xl">
-      <div className="p-6 border-b border-sidebar-border/50 bg-gradient-to-b from-sidebar-accent/20 to-sidebar/50">
-        <div className="flex flex-col items-center gap-4">
-          <div className="p-3 rounded-2xl bg-sidebar-primary/10 shadow-lg backdrop-blur-sm">
+    <aside
+      className={cn(
+        "sticky top-0 flex h-screen w-64 shrink-0 flex-col border-r border-slate-200 bg-white shadow-xl",
+        className
+      )}
+    >
+      <div className="border-b border-slate-200 bg-gradient-to-b from-slate-50 to-white p-4">
+        <div className="flex flex-col items-center gap-3">
+          <div className="h-24 w-full overflow-hidden rounded-2xl bg-slate-100/80 shadow-sm">
             <img 
               src={sidebarImage} 
               alt="Islamic Design" 
-              className="h-14 w-auto object-contain filter drop-shadow-sm"
+              className="h-full w-full object-cover object-center"
             />
           </div>
-          <span className="font-bold text-xl text-sidebar-foreground tracking-wide drop-shadow-sm">AdminHub</span>
+          {/* <span className="text-lg font-bold tracking-wide text-slate-900">Admin</span> */}
         </div>
       </div>
       
@@ -34,11 +49,12 @@ export default function Sidebar() {
             key={item.path}
             to={item.path}
             end={item.end}
+            onClick={onNavigate}
             className={({ isActive }) =>
               `group flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 transform ${
                 isActive
-                  ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-lg scale-[1.02] border border-sidebar-primary/30"
-                  : "text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground hover:shadow-md hover:scale-[1.01] hover:border hover:border-sidebar-accent/30"
+                  ? "border border-blue-900/20 bg-blue-900 text-white shadow-md scale-[1.02]"
+                  : "border border-transparent text-slate-700 hover:bg-slate-100 hover:text-slate-900 hover:shadow-sm hover:scale-[1.01]"
               }`
             }
           >

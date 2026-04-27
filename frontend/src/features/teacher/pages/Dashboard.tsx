@@ -1,0 +1,5 @@
+
+function TeacherDashboardPage() {
+  return <div>Teacher Dashboard</div>;
+}
+export default TeacherDashboardPage;

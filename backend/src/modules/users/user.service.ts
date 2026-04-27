@@ -75,3 +75,30 @@ export const deleteUserService = async (id: string) => {
 
   return sanitizeUser(user);
 };
+
+export const toggleUserStatusService = async (id: string) => {
+  if (!isValidObjectId(id)) {
+    return null;
+  }
+
+  const existingUser = await User.findById(id).lean();
+
+  if (!existingUser) {
+    return null;
+  }
+
+  const user = await User.findByIdAndUpdate(
+    id,
+    { isActive: !existingUser.isActive },
+    {
+      new: true,
+      runValidators: true,
+    }
+  ).lean();
+
+  if (!user) {
+    return null;
+  }
+
+  return sanitizeUser(user);
+};

@@ -1,4 +1,4 @@
-import { LogOut, ShieldCheck, UserCircle2 } from "lucide-react";
+import { LogOut, Menu, ShieldCheck, UserCircle2 } from "lucide-react";
 import { useLocation, useNavigate } from "react-router";
 
 import { useAppDispatch, useAppSelector } from "@/app/hooks";
@@ -9,11 +9,17 @@ import { Button } from "@/components/ui/button";
 const pageNames: Record<string, string> = {
   "/admin": "Dashboard",
   "/admin/users": "Users",
+  "/admin/classes": "Classes",
+  "/admin/students": "Students",
   "/admin/settings": "Settings",
  
 };
 
-export default function Topbar() {
+interface TopbarProps {
+  onOpenMenu?: () => void;
+}
+
+export default function Topbar({ onOpenMenu }: TopbarProps) {
   const location = useLocation();
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
@@ -35,45 +41,52 @@ export default function Topbar() {
   }
 
   return (
-    <header className="border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-6 py-4 shadow-lg">
+    <header className="border-b border-slate-200 bg-white px-4 py-3 md:px-6">
       <div className="flex items-center justify-between gap-4">
         <div className="flex items-center gap-4">
-          <div className="p-3 rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 shadow-md border border-primary/20">
-            <ShieldCheck className="h-6 w-6 text-primary" />
-          </div>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-sm"
+            onClick={onOpenMenu}
+            className="md:hidden"
+            aria-label="Open menu"
+          >
+            <Menu className="h-5 w-5 text-slate-700" />
+          </Button>
+          <ShieldCheck className="h-6 w-6 text-slate-700" />
           <div>
-            <h1 className="text-2xl font-bold tracking-tight text-foreground drop-shadow-sm">
+            <h1 className="text-xl font-bold tracking-tight text-slate-900 md:text-2xl">
               {currentPage}
             </h1>
-            <p className="text-xs text-muted-foreground mt-1">Administration Panel</p>
+            <p className="mt-1 text-xs text-slate-500">Administration Panel</p>
           </div>
         </div>
 
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-3 rounded-2xl border border-border/50 bg-gradient-to-r from-card/80 to-card/40 px-5 py-3 shadow-md backdrop-blur-sm">
-            <div className="p-1 rounded-full bg-primary/10">
-              <UserCircle2 className="h-8 w-8 text-primary" />
-            </div>
+        <div className="flex items-center gap-2 md:gap-4">
+          <div className="flex items-center gap-3">
+            <UserCircle2 className="h-8 w-8 text-slate-700" />
 
-            <div className="flex flex-col leading-tight">
-              <span className="text-sm font-semibold text-foreground">
+            <div className="hidden flex-col leading-tight sm:flex">
+              <span className="text-sm font-semibold text-slate-900">
                 {user?.name || "Unknown User"}
               </span>
-              <span className="text-xs text-muted-foreground capitalize">
+              <span className="text-xs capitalize text-slate-500">
                 {user?.role || "No Role"}
               </span>
             </div>
           </div>
 
           <Button
-            variant="outline"
             size="sm"
             onClick={handleLogout}
             disabled={isLoading}
-            className="gap-2 border-primary/30 hover:bg-primary/15 hover:border-primary/50 hover:shadow-md transition-all duration-300 rounded-xl px-4"
+            className="gap-2 bg-blue-900 px-4 text-white hover:bg-blue-800"
           >
             <LogOut className="h-4 w-4" />
-            {isLoading ? "Logging out..." : "Logout"}
+            <span className="hidden sm:inline">
+              {isLoading ? "Logging out..." : "Logout"}
+            </span>
           </Button>
         </div>
       </div>

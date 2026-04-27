@@ -37,7 +37,11 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { useState } from "react";
 
-export default function CreateUserDialog() {
+interface CreateUserDialogProps {
+  triggerClassName?: string;
+}
+
+export default function CreateUserDialog({ triggerClassName }: CreateUserDialogProps) {
   const [open, setOpen] = useState(false);
   const [createUser, { isLoading }] = useCreateUserMutation();
 
@@ -55,7 +59,7 @@ export default function CreateUserDialog() {
   async function onSubmit(values: CreateUserFormValues) {
     try {
       const newUser = await createUser(values).unwrap();
-      toast.success(`User "${newUser.name}" created successfully`);
+      toast.success(`User "${newUser.data.name}" created successfully`);
       form.reset({
         name: "",
         email: "",
@@ -73,13 +77,13 @@ export default function CreateUserDialog() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button className="gap-2">
+        <Button className={`gap-2 ${triggerClassName ?? ""}`}>
           <UserPlus className="h-4 w-4" />
           Create User
         </Button>
       </DialogTrigger>
 
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="max-w-[calc(100%-1rem)] sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Create User</DialogTitle>
           <DialogDescription>
@@ -199,6 +203,7 @@ export default function CreateUserDialog() {
             type="submit"
             form="create-user-form"
             disabled={isLoading}
+            className="w-full sm:w-auto"
           >
             {isLoading ? "Creating..." : "Create User"}
           </Button>
