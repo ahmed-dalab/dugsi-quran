@@ -8,6 +8,7 @@ import AdminDashboardPage from "@/features/admin/Dashboard";
 import Users from "@/features/admin/users/pages/Users";
 import Classes from "@/features/admin/classes/pages/Classes";
 import Students from "@/features/admin/students/pages/Students";
+import Teachers from "@/features/admin/teachers/pages/Teachers";
 import Settings from "@/features/admin/settings/Settings";
 
 
@@ -35,6 +36,10 @@ export const adminRoutes: AppRouteObject[] = [
           {
             path: "students",
             element: <Students />,
+          },
+          {
+            path: "teachers",
+            element: <Teachers />,
           },
           {
             path: "settings",

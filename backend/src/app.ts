@@ -10,6 +10,9 @@ import authRouter from "./modules/auth/auth.route"
 import userRouter from "./modules/users/user.route"
 import classRouter from "./modules/classes/class.route"
 import studentRouter from "./modules/students/student.route"
+import teacherRouter from "./modules/teachers/teacher.route"
+import assignmentRouter from "./modules/assignments/assignment.route"
+import dashboardRouter from "./modules/dashboard/dashboard.route"
 import { env } from "./config/env"
 import { authenticate, authorize } from "./middlewares/auth.middleware"
 const app = express()
@@ -53,6 +56,9 @@ app.use("/api/auth", authRouter)
 app.use('/api/users',authenticate, authorize("admin"), userRouter)
 app.use("/api/classes", authenticate, authorize("admin"), classRouter)
 app.use("/api/students", authenticate, authorize("admin"), studentRouter)
+app.use("/api/teachers", authenticate, authorize("admin"), teacherRouter)
+app.use("/api/assignments", authenticate, authorize("admin"), assignmentRouter)
+app.use("/api/dashboard", authenticate, authorize("admin"), dashboardRouter)
 
 
 export default app
