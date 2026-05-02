@@ -21,13 +21,7 @@ import {
   FieldLabel,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useCreateTeacherMutation } from "../api/teacherApi";
 import {
   createTeacherSchema,
@@ -52,23 +46,11 @@ export default function CreateTeacherDialog({
       name: "",
       email: "",
       password: "",
-      employeeId: "",
       phone: "",
       address: "",
       gender: "male",
-      dateOfBirth: "",
       hireDate: today,
-      qualification: "",
-      specialization: "",
-      experience: "",
-      salary: 0,
-      employmentType: "full-time",
       status: "active",
-      emergencyContact: {
-        name: "",
-        phone: "",
-        relationship: "",
-      },
     },
   });
 
@@ -76,43 +58,23 @@ export default function CreateTeacherDialog({
     try {
       const payload = {
         ...values,
-        dateOfBirth: values.dateOfBirth?.trim() ? values.dateOfBirth : null,
-        employeeId: values.employeeId?.trim() ? values.employeeId : undefined,
         phone: values.phone?.trim() ? values.phone : undefined,
         address: values.address?.trim() ? values.address : undefined,
-        qualification: values.qualification?.trim() ? values.qualification : undefined,
-        specialization: values.specialization?.trim() ? values.specialization : undefined,
-        experience: values.experience?.trim() ? values.experience : undefined,
-        emergencyContact: {
-          name: values.emergencyContact?.name?.trim() || undefined,
-          phone: values.emergencyContact?.phone?.trim() || undefined,
-          relationship: values.emergencyContact?.relationship?.trim() || undefined,
-        },
       };
 
       const newTeacher = await createTeacher(payload).unwrap();
-      toast.success(`Teacher "${newTeacher.data.userId.name}" created successfully`);
+      const createdTeacherName =
+        typeof newTeacher.data.userId === "string" ? "Teacher" : newTeacher.data.userId.name;
+      toast.success(`Teacher "${createdTeacherName}" created successfully`);
       form.reset({
         name: "",
         email: "",
         password: "",
-        employeeId: "",
         phone: "",
         address: "",
         gender: "male",
-        dateOfBirth: "",
         hireDate: today,
-        qualification: "",
-        specialization: "",
-        experience: "",
-        salary: 0,
-        employmentType: "full-time",
         status: "active",
-        emergencyContact: {
-          name: "",
-          phone: "",
-          relationship: "",
-        },
       });
       setOpen(false);
     } catch (error: any) {
@@ -194,23 +156,6 @@ export default function CreateTeacherDialog({
             />
 
             <Controller
-              name="employeeId"
-              control={form.control}
-              render={({ field, fieldState }) => (
-                <Field data-invalid={fieldState.invalid}>
-                  <FieldLabel htmlFor="teacher-employee-id">Employee ID</FieldLabel>
-                  <Input
-                    {...field}
-                    id="teacher-employee-id"
-                    placeholder="Enter employee ID"
-                    aria-invalid={fieldState.invalid}
-                  />
-                  {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-                </Field>
-              )}
-            />
-
-            <Controller
               name="phone"
               control={form.control}
               render={({ field, fieldState }) => (
@@ -248,23 +193,6 @@ export default function CreateTeacherDialog({
             />
 
             <Controller
-              name="dateOfBirth"
-              control={form.control}
-              render={({ field, fieldState }) => (
-                <Field data-invalid={fieldState.invalid}>
-                  <FieldLabel htmlFor="teacher-dob">Date of Birth</FieldLabel>
-                  <Input
-                    {...field}
-                    id="teacher-dob"
-                    type="date"
-                    aria-invalid={fieldState.invalid}
-                  />
-                  {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-                </Field>
-              )}
-            />
-
-            <Controller
               name="hireDate"
               control={form.control}
               render={({ field, fieldState }) => (
@@ -276,27 +204,6 @@ export default function CreateTeacherDialog({
                     type="date"
                     aria-invalid={fieldState.invalid}
                   />
-                  {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-                </Field>
-              )}
-            />
-
-            <Controller
-              name="employmentType"
-              control={form.control}
-              render={({ field, fieldState }) => (
-                <Field data-invalid={fieldState.invalid}>
-                  <FieldLabel>Employment Type</FieldLabel>
-                  <Select value={field.value} onValueChange={field.onChange}>
-                    <SelectTrigger aria-invalid={fieldState.invalid}>
-                      <SelectValue placeholder="Select employment type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="full-time">Full-time</SelectItem>
-                      <SelectItem value="part-time">Part-time</SelectItem>
-                      <SelectItem value="volunteer">Volunteer</SelectItem>
-                    </SelectContent>
-                  </Select>
                   {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
                 </Field>
               )}
@@ -323,25 +230,6 @@ export default function CreateTeacherDialog({
             />
 
             <Controller
-              name="salary"
-              control={form.control}
-              render={({ field, fieldState }) => (
-                <Field data-invalid={fieldState.invalid}>
-                  <FieldLabel htmlFor="teacher-salary">Salary</FieldLabel>
-                  <Input
-                    {...field}
-                    id="teacher-salary"
-                    type="number"
-                    placeholder="Enter salary"
-                    onChange={(e) => field.onChange(Number(e.target.value))}
-                    aria-invalid={fieldState.invalid}
-                  />
-                  {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-                </Field>
-              )}
-            />
-
-            <Controller
               name="address"
               control={form.control}
               render={({ field, fieldState }) => (
@@ -358,112 +246,6 @@ export default function CreateTeacherDialog({
               )}
             />
 
-            <Controller
-              name="qualification"
-              control={form.control}
-              render={({ field, fieldState }) => (
-                <Field data-invalid={fieldState.invalid} className="md:col-span-2">
-                  <FieldLabel htmlFor="teacher-qualification">Qualification</FieldLabel>
-                  <Input
-                    {...field}
-                    id="teacher-qualification"
-                    placeholder="Enter qualification"
-                    aria-invalid={fieldState.invalid}
-                  />
-                  {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-                </Field>
-              )}
-            />
-
-            <Controller
-              name="specialization"
-              control={form.control}
-              render={({ field, fieldState }) => (
-                <Field data-invalid={fieldState.invalid} className="md:col-span-2">
-                  <FieldLabel htmlFor="teacher-specialization">Specialization</FieldLabel>
-                  <Input
-                    {...field}
-                    id="teacher-specialization"
-                    placeholder="Enter specialization"
-                    aria-invalid={fieldState.invalid}
-                  />
-                  {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-                </Field>
-              )}
-            />
-
-            <Controller
-              name="experience"
-              control={form.control}
-              render={({ field, fieldState }) => (
-                <Field data-invalid={fieldState.invalid} className="md:col-span-2">
-                  <FieldLabel htmlFor="teacher-experience">Experience</FieldLabel>
-                  <Input
-                    {...field}
-                    id="teacher-experience"
-                    placeholder="Enter experience details"
-                    aria-invalid={fieldState.invalid}
-                  />
-                  {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-                </Field>
-              )}
-            />
-
-            <div className="md:col-span-2 border-t pt-4">
-              <h3 className="text-sm font-medium mb-3">Emergency Contact</h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <Controller
-                  name="emergencyContact.name"
-                  control={form.control}
-                  render={({ field, fieldState }) => (
-                    <Field data-invalid={fieldState.invalid}>
-                      <FieldLabel htmlFor="emergency-name">Contact Name</FieldLabel>
-                      <Input
-                        {...field}
-                        id="emergency-name"
-                        placeholder="Enter contact name"
-                        aria-invalid={fieldState.invalid}
-                      />
-                      {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-                    </Field>
-                  )}
-                />
-
-                <Controller
-                  name="emergencyContact.phone"
-                  control={form.control}
-                  render={({ field, fieldState }) => (
-                    <Field data-invalid={fieldState.invalid}>
-                      <FieldLabel htmlFor="emergency-phone">Contact Phone</FieldLabel>
-                      <Input
-                        {...field}
-                        id="emergency-phone"
-                        placeholder="Enter contact phone"
-                        aria-invalid={fieldState.invalid}
-                      />
-                      {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-                    </Field>
-                  )}
-                />
-
-                <Controller
-                  name="emergencyContact.relationship"
-                  control={form.control}
-                  render={({ field, fieldState }) => (
-                    <Field data-invalid={fieldState.invalid}>
-                      <FieldLabel htmlFor="emergency-relationship">Relationship</FieldLabel>
-                      <Input
-                        {...field}
-                        id="emergency-relationship"
-                        placeholder="Enter relationship"
-                        aria-invalid={fieldState.invalid}
-                      />
-                      {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-                    </Field>
-                  )}
-                />
-              </div>
-            </div>
           </FieldGroup>
         </form>
 

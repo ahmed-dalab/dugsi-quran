@@ -4,5 +4,6 @@ export const PATHS = {
   unauthorized: "/unauthorized",
 
   admin: "/admin",
+  adminAttendance: "/admin/attendance",
   teacher: "/teacher",
 } as const;

@@ -5,6 +5,7 @@ import {
   LayoutDashboard, 
   Users, 
   UserCheck,
+  ClipboardCheck,
   Settings 
 } from "lucide-react";
 import sidebarImage from "@/assets/sidebar2.png";
@@ -16,6 +17,7 @@ const navItems = [
   { path: "/admin/classes", name: "Classes", icon: BookOpen },
   { path: "/admin/students", name: "Students", icon: GraduationCap },
   { path: "/admin/teachers", name: "Teachers", icon: UserCheck },
+  { path: "/admin/attendance", name: "Attendance", icon: ClipboardCheck },
   { path: "/admin/settings", name: "Settings", icon: Settings },
 ];
 

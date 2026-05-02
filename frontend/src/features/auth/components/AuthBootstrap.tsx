@@ -20,8 +20,7 @@ export default function AuthBootstrap({ children }: Props) {
 
       try {
         const result = await refresh().unwrap();
-        console.log("result: in boot: ", result)
-
+      
         if (!mounted) return;
 
         dispatch(

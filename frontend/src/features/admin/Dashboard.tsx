@@ -1,12 +1,9 @@
-
-
 import { useAppSelector } from "@/app/hooks";
-
-import { Users, GraduationCap, UserCheck, BookOpen, Calendar, TrendingUp } from "lucide-react";
 import { useGetDashboardStatsQuery } from "./dashboard/api/dashboardApi";
-import StatCard from "./dashboard/components/StatCard";
-import BarChart from "./dashboard/components/BarChart";
-import LineChart from "./dashboard/components/LineChart";
+import MetricCard from "./dashboard/components/MetricCard";
+import AnalyticsChart from "./dashboard/components/AnalyticsChart";
+import TrendChart from "./dashboard/components/TrendChart";
+import { Users, GraduationCap, UserCheck, BookOpen, Calendar, Activity } from "lucide-react";
 
 function AdminDashboardPage() {
   const { accessToken, isBootstrapping } = useAppSelector((state) => state.auth);
@@ -16,116 +13,137 @@ function AdminDashboardPage() {
   });
 
   if (isBootstrapping) {
-    return <div>Loading session...</div>;
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-gray-500">Loading session...</div>
+      </div>
+    );
   }
 
   if (isLoading) {
-    return <div>Loading dashboard...</div>;
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-gray-500">Loading dashboard...</div>
+      </div>
+    );
   }
 
   if (isError || !data) {
-    return <div>Failed to load dashboard data.</div>;
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-gray-500">Failed to load dashboard data.</div>
+      </div>
+    );
   }
 
   const stats = data.data;
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold">Dashboard</h1>
-        <p className="text-sm text-muted-foreground">
-          Overview of your Quranic school management system.
-        </p>
-      </div>
+    <div className="min-h-screen bg-gray-50">
+      <div className="px-4 sm:px-6 lg:px-8 py-8">
+        {/* Header */}
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Dashboard</h1>
+          <p className="mt-2 text-gray-600">
+            Welcome back! Here's an overview of your Quranic school management system.
+          </p>
+        </div>
 
-      {/* Stat Cards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <StatCard
-          title="Total Students"
-          value={stats.totalStudents}
-          icon={GraduationCap}
-          description="Active students"
-        />
-        <StatCard
-          title="Total Teachers"
-          value={stats.totalTeachers}
-          icon={UserCheck}
-          description="All teachers"
-        />
-        <StatCard
-          title="Total Classes"
-          value={stats.totalClasses}
-          icon={BookOpen}
-          description="Available classes"
-        />
-        <StatCard
-          title="Active Assignments"
-          value={stats.activeAssignments}
-          icon={Calendar}
-          description="Current teacher assignments"
-        />
-      </div>
+        {/* Key Metrics */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <MetricCard
+            title="Students"
+            value={stats.totalStudents}
+            icon={GraduationCap}
+            description="Active enrolled students"
+            trend={{
+              value: stats.recentRegistrations > 0 ? 12 : 0,
+              isPositive: true,
+              label: "vs last month"
+            }}
+          />
+          <MetricCard
+            title="Teachers"
+            value={stats.totalTeachers}
+            icon={UserCheck}
+            description="Teaching staff"
+          />
+          <MetricCard
+            title="Classes"
+            value={stats.totalClasses}
+            icon={BookOpen}
+            description="Active classes"
+          />
+          <MetricCard
+            title="Assignments"
+            value={stats.activeAssignments}
+            icon={Calendar}
+            description="Current assignments"
+          />
+        </div>
 
-      {/* Charts */}
-      <div className="grid gap-6 md:grid-cols-2">
-        {/* Students by Gender */}
-        <BarChart
-          title="Students by Gender"
-          data={[
-            { label: "Male", value: stats.studentsByGender.male, color: '#3b82f6' },
-            { label: "Female", value: stats.studentsByGender.female, color: '#ec4899' }
-          ]}
-        />
+        {/* Analytics Section */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+          <AnalyticsChart
+            title="Student Demographics"
+            subtitle="Gender distribution across all students"
+            data={[
+              { label: "Male Students", value: stats.studentsByGender.male, color: '#3b82f6' },
+              { label: "Female Students", value: stats.studentsByGender.female, color: '#ec4899' }
+            ]}
+          />
+          
+          <AnalyticsChart
+            title="Assignment Status"
+            subtitle="Current assignment distribution"
+            data={[
+              { label: "Active", value: stats.assignmentsByStatus.active, color: '#10b981' },
+              { label: "Completed", value: stats.assignmentsByStatus.ended, color: '#f59e0b' },
+              { label: "Inactive", value: stats.assignmentsByStatus.inactive, color: '#8b5cf6' }
+            ]}
+          />
+        </div>
 
-        {/* Teachers by Employment Type */}
-        <BarChart
-          title="Teachers by Employment Type"
-          data={[
-            { label: "Full-time", value: stats.teachersByEmploymentType["full-time"], color: '#10b981' },
-            { label: "Part-time", value: stats.teachersByEmploymentType["part-time"], color: '#f59e0b' },
-            { label: "Volunteer", value: stats.teachersByEmploymentType.volunteer, color: '#8b5cf6' }
-          ]}
-        />
-      </div>
+        {/* Trends Section */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+          <TrendChart
+            title="Registration Trends"
+            subtitle="Monthly student and teacher registrations"
+            data={stats.monthlyRegistrations}
+          />
+          
+          <AnalyticsChart
+            title="Class Distribution"
+            subtitle="Top classes by student enrollment"
+            data={stats.classDistribution.slice(0, 5).map(item => ({
+              label: item.className,
+              value: item.studentCount,
+              color: '#06b6d4'
+            }))}
+          />
+        </div>
 
-      {/* Monthly Registrations */}
-      <div className="grid gap-6 md:grid-cols-2">
-        <LineChart
-          title="Monthly Registrations (Last 6 Months)"
-          data={stats.monthlyRegistrations}
-        />
-
-        {/* Class Distribution */}
-        <BarChart
-          title="Top Classes by Student Count"
-          data={stats.classDistribution.slice(0, 5).map(item => ({
-            label: item.className,
-            value: item.studentCount,
-            color: '#06b6d4'
-          }))}
-        />
-      </div>
-
-      {/* Additional Stats */}
-      <div className="grid gap-4 md:grid-cols-3">
-        <StatCard
-          title="Total Users"
-          value={stats.totalUsers}
-          icon={Users}
-          description="All system users"
-        />
-        <StatCard
-          title="Recent Registrations"
-          value={stats.recentRegistrations}
-          icon={TrendingUp}
-          description="Last 30 days"
-        />
-        <StatCard
-          title="Assignment Status"
-          value={`${stats.assignmentsByStatus.active} active`}
-          icon={Calendar}
-          description={`${stats.assignmentsByStatus.ended} ended, ${stats.assignmentsByStatus.inactive} inactive`}
-        />
+        {/* Bottom Stats */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <MetricCard
+            title="Total Users"
+            value={stats.totalUsers}
+            icon={Users}
+            description="All system accounts"
+          />
+          <MetricCard
+            title="Recent Activity"
+            value={stats.recentRegistrations}
+            icon={Activity}
+            description="New registrations (30 days)"
+          />
+          <MetricCard
+            title="Assignment Status"
+            value={`${stats.assignmentsByStatus.active}`}
+            icon={Calendar}
+            description={`${stats.assignmentsByStatus.ended} completed`}
+          />
+        </div>
       </div>
     </div>
   );

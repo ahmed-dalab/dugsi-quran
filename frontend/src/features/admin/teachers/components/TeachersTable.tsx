@@ -1,7 +1,7 @@
 import type { Teacher } from "../types/teacher.types";
 import DeleteTeacherDialog from "./DeleteTeacherDialog";
 import EditTeacherDialog from "./EditTeacherDialog";
-import AssignmentHistory from "@/features/admin/assignments/components/AssignmentHistory";
+import ViewTeacherDialog from "./ViewTeacherDialog";
 import AssignClassDialog from "@/features/admin/assignments/components/AssignClassDialog";
 import { useGetCurrentAssignmentForTeacherQuery } from "@/features/admin/assignments/api/assignmentApi";
 
@@ -34,9 +34,6 @@ function TeacherRow({ teacher }: { teacher: Teacher }) {
           {teacher.phone && (
             <p className="text-sm text-muted-foreground">{teacher.phone}</p>
           )}
-          {teacher.employeeId && (
-            <p className="text-sm text-muted-foreground">ID: {teacher.employeeId}</p>
-          )}
           {currentAssignment?.data && (
             <p className="text-sm text-muted-foreground">
               Class: {getClassName(currentAssignment.data.classId)}
@@ -48,11 +45,6 @@ function TeacherRow({ teacher }: { teacher: Teacher }) {
           {teacher.gender && (
             <span className="inline-flex rounded-md bg-primary/10 px-2 py-1 text-xs font-medium text-primary">
               {teacher.gender}
-            </span>
-          )}
-          {teacher.employmentType && (
-            <span className="inline-flex rounded-md bg-blue-100 px-2 py-1 text-xs font-medium text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
-              {teacher.employmentType}
             </span>
           )}
           {currentAssignment?.data && (
@@ -73,7 +65,7 @@ function TeacherRow({ teacher }: { teacher: Teacher }) {
 
         <div className="mt-4 grid gap-2">
           <AssignClassDialog triggerClassName="w-full justify-start" />
-          <AssignmentHistory teacherId={teacher._id} teacherName={teacherName} triggerClassName="w-full justify-start" />
+          <ViewTeacherDialog teacher={teacher} triggerClassName="w-full justify-start" />
           <EditTeacherDialog teacher={teacher} triggerClassName="w-full justify-start" />
           <DeleteTeacherDialog teacher={teacher} triggerClassName="w-full justify-start" />
         </div>
@@ -84,7 +76,6 @@ function TeacherRow({ teacher }: { teacher: Teacher }) {
         <td className="px-4 py-3 font-medium">{teacherName}</td>
         <td className="px-4 py-3">{getUserEmail(teacher.userId)}</td>
         <td className="px-4 py-3">{teacher.phone || "-"}</td>
-        <td className="px-4 py-3">{teacher.employeeId || "-"}</td>
         <td className="px-4 py-3">
           {currentAssignment?.data ? (
             <span className="inline-flex rounded-md bg-green-100 px-2 py-1 text-xs font-medium text-green-700 dark:bg-green-900/30 dark:text-green-400">
@@ -92,15 +83,6 @@ function TeacherRow({ teacher }: { teacher: Teacher }) {
             </span>
           ) : (
             <span className="text-muted-foreground">Not assigned</span>
-          )}
-        </td>
-        <td className="px-4 py-3">
-          {teacher.employmentType ? (
-            <span className="inline-flex rounded-md bg-blue-100 px-2 py-1 text-xs font-medium text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
-              {teacher.employmentType}
-            </span>
-          ) : (
-            "-"
           )}
         </td>
         <td className="px-4 py-3">
@@ -117,7 +99,7 @@ function TeacherRow({ teacher }: { teacher: Teacher }) {
         <td className="px-4 py-3">
           <div className="flex items-center gap-2">
             <AssignClassDialog />
-            <AssignmentHistory teacherId={teacher._id} teacherName={teacherName} />
+            <ViewTeacherDialog teacher={teacher} />
             <EditTeacherDialog teacher={teacher} />
             <DeleteTeacherDialog teacher={teacher} />
           </div>
@@ -143,9 +125,7 @@ export default function TeachersTable({ teachers }: TeachersTableProps) {
               <th className="px-4 py-3 text-left">Name</th>
               <th className="px-4 py-3 text-left">Email</th>
               <th className="px-4 py-3 text-left">Phone</th>
-              <th className="px-4 py-3 text-left">Employee ID</th>
               <th className="px-4 py-3 text-left">Current Class</th>
-              <th className="px-4 py-3 text-left">Employment Type</th>
               <th className="px-4 py-3 text-left">Status</th>
               <th className="px-4 py-3 text-left">Actions</th>
             </tr>

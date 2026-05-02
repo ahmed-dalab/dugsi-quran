@@ -27,10 +27,13 @@ interface AssignmentHistoryProps {
   teacherName: string;
 }
 
-export default function AssignmentHistory({ teacherId, teacherName }: AssignmentHistoryProps) {
-  const [open, setOpen] = useState(false);
+interface AssignmentHistoryContentProps {
+  teacherId: string;
+}
+
+export function AssignmentHistoryContent({ teacherId }: AssignmentHistoryContentProps) {
   const { data: assignmentsData, isLoading } = useGetAssignmentsByTeacherQuery(teacherId, {
-    skip: !open || !teacherId,
+    skip: !teacherId,
   });
 
   const getStatusBadge = (status: string) => {
@@ -62,6 +65,67 @@ export default function AssignmentHistory({ teacherId, teacherName }: Assignment
     return format(new Date(dateString), "MMM dd, yyyy");
   };
 
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-8">
+        <div>Loading assignment history...</div>
+      </div>
+    );
+  }
+
+  if (!assignmentsData?.data || assignmentsData.data.length === 0) {
+    return (
+      <div className="text-center py-8 text-muted-foreground">
+        No assignment history found for this teacher.
+      </div>
+    );
+  }
+
+  return (
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead>Class</TableHead>
+          <TableHead>Status</TableHead>
+          <TableHead>Assigned Date</TableHead>
+          <TableHead>End Date</TableHead>
+          <TableHead>Assigned By</TableHead>
+          <TableHead>Notes</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {assignmentsData.data.map((assignment) => (
+          <TableRow key={assignment._id}>
+            <TableCell className="font-medium">
+              {getClassName(assignment.classId)}
+            </TableCell>
+            <TableCell>
+              {getStatusBadge(assignment.status)}
+            </TableCell>
+            <TableCell>
+              {formatDate(assignment.assignedDate)}
+            </TableCell>
+            <TableCell>
+              {formatDate(assignment.endDate)}
+            </TableCell>
+            <TableCell>
+              {getAssignedByName(assignment.assignedBy)}
+            </TableCell>
+            <TableCell className="max-w-xs">
+              <div className="truncate" title={assignment.notes || "-"}>
+                {assignment.notes || "-"}
+              </div>
+            </TableCell>
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
+  );
+}
+
+export default function AssignmentHistory({ teacherId, teacherName }: AssignmentHistoryProps) {
+  const [open, setOpen] = useState(false);
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
@@ -79,58 +143,7 @@ export default function AssignmentHistory({ teacherId, teacherName }: Assignment
           </DialogDescription>
         </DialogHeader>
 
-        {isLoading ? (
-          <div className="flex items-center justify-center py-8">
-            <div>Loading assignment history...</div>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {!assignmentsData?.data || assignmentsData.data.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
-                No assignment history found for this teacher.
-              </div>
-            ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Class</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Assigned Date</TableHead>
-                    <TableHead>End Date</TableHead>
-                    <TableHead>Assigned By</TableHead>
-                    <TableHead>Notes</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {assignmentsData.data.map((assignment) => (
-                    <TableRow key={assignment._id}>
-                      <TableCell className="font-medium">
-                        {getClassName(assignment.classId)}
-                      </TableCell>
-                      <TableCell>
-                        {getStatusBadge(assignment.status)}
-                      </TableCell>
-                      <TableCell>
-                        {formatDate(assignment.assignedDate)}
-                      </TableCell>
-                      <TableCell>
-                        {formatDate(assignment.endDate)}
-                      </TableCell>
-                      <TableCell>
-                        {getAssignedByName(assignment.assignedBy)}
-                      </TableCell>
-                      <TableCell className="max-w-xs">
-                        <div className="truncate" title={assignment.notes || "-"}>
-                          {assignment.notes || "-"}
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            )}
-          </div>
-        )}
+        {open ? <AssignmentHistoryContent teacherId={teacherId} /> : null}
       </DialogContent>
     </Dialog>
   );

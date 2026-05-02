@@ -9,11 +9,6 @@ export interface DashboardStats {
     male: number;
     female: number;
   };
-  teachersByEmploymentType: {
-    "full-time": number;
-    "part-time": number;
-    "volunteer": number;
-  };
   assignmentsByStatus: {
     active: number;
     ended: number;

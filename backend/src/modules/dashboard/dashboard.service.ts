@@ -12,7 +12,6 @@ export interface DashboardStats {
   activeAssignments: number;
   recentRegistrations: number;
   studentsByGender: { male: number; female: number };
-  teachersByEmploymentType: { "full-time": number; "part-time": number; "volunteer": number };
   assignmentsByStatus: { active: number; ended: number; inactive: number };
   monthlyRegistrations: { month: string; students: number; teachers: number }[];
   classDistribution: { className: string; studentCount: number }[];
@@ -50,18 +49,6 @@ export const getDashboardStatsService = async (): Promise<DashboardStats> => {
   studentsByGender.forEach(item => {
     if (item._id) {
       genderStats[item._id as keyof typeof genderStats] = item.count;
-    }
-  });
-
-  // Get teachers by employment type
-  const teachersByEmployment = await TeacherModel.aggregate([
-    { $group: { _id: "$employmentType", count: { $sum: 1 } } }
-  ]);
-  
-  const employmentStats = { "full-time": 0, "part-time": 0, "volunteer": 0 };
-  teachersByEmployment.forEach(item => {
-    if (item._id) {
-      employmentStats[item._id as keyof typeof employmentStats] = item.count;
     }
   });
 
@@ -171,7 +158,6 @@ export const getDashboardStatsService = async (): Promise<DashboardStats> => {
     activeAssignments,
     recentRegistrations,
     studentsByGender: genderStats,
-    teachersByEmploymentType: employmentStats,
     assignmentsByStatus: assignmentStats,
     monthlyRegistrations,
     classDistribution: classDistribution.map(item => ({

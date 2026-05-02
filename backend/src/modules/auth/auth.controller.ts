@@ -36,7 +36,7 @@ export const login = async (req: Request, res: Response) => {
     const { email, password } = req.body;
 
     const user: IUser | null = await User.findOne({ email }).select("+password");
-    console.log("user: ", user)
+  
     if (!user) {
       return res.status(401).json({
         status: "failed",
@@ -88,7 +88,7 @@ export const login = async (req: Request, res: Response) => {
 // refresh token
 export const refreshToken = async (req: Request, res: Response) => {
   try {
-    console.log("refresh token called: ", req.cookies)
+
     const refreshTokenFromCookie = req.cookies?.refreshToken;
 
     if (!refreshTokenFromCookie) {
