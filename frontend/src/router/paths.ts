@@ -5,5 +5,6 @@ export const PATHS = {
 
   admin: "/admin",
   adminAttendance: "/admin/attendance",
+  adminFees: "/admin/fees",
   teacher: "/teacher",
 } as const;

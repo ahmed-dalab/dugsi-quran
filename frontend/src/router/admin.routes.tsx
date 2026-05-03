@@ -11,6 +11,7 @@ import Students from "@/features/admin/students/pages/Students";
 import Teachers from "@/features/admin/teachers/pages/Teachers";
 import TeacherDetails from "@/features/admin/teachers/pages/TeacherDetails";
 import AttendancePage from "@/features/admin/attendance/pages/Attendance";
+import Fees from "@/features/admin/fees/pages/Fees";
 import Settings from "@/features/admin/settings/Settings";
 
 
@@ -50,6 +51,10 @@ export const adminRoutes: AppRouteObject[] = [
           {
             path: "attendance",
             element: <AttendancePage />,
+          },
+          {
+            path: "fees",
+            element: <Fees />,
           },
           {
             path: "settings",

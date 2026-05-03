@@ -11,6 +11,7 @@ const pageNames: Record<string, string> = {
   "/admin/users": "Users",
   "/admin/classes": "Classes",
   "/admin/students": "Students",
+  "/admin/fees": "Fees",
   "/admin/settings": "Settings",
  
 };

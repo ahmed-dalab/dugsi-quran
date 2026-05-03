@@ -6,6 +6,7 @@ import {
   Users, 
   UserCheck,
   ClipboardCheck,
+  HandCoins,
   Settings 
 } from "lucide-react";
 import sidebarImage from "@/assets/sidebar2.png";
@@ -18,6 +19,7 @@ const navItems = [
   { path: "/admin/students", name: "Students", icon: GraduationCap },
   { path: "/admin/teachers", name: "Teachers", icon: UserCheck },
   { path: "/admin/attendance", name: "Attendance", icon: ClipboardCheck },
+  { path: "/admin/fees", name: "Fees", icon: HandCoins },
   { path: "/admin/settings", name: "Settings", icon: Settings },
 ];
 

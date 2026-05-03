@@ -108,7 +108,6 @@ const teacherSchema = new Schema<ITeacher>(
 
 // Index for better performance
 teacherSchema.index({ userId: 1 });
-teacherSchema.index({ employeeId: 1 });
 teacherSchema.index({ status: 1 });
 
 export const TeacherModel = model<ITeacher>("Teacher", teacherSchema);
