@@ -26,8 +26,8 @@ export default function AnalyticsChart({
   const totalValue = data.reduce((sum, item) => sum + item.value, 0);
   
   return (
-    <Card className={cn("p-6 border-0 bg-gradient-to-br from-white to-gray-50/30 shadow-sm", className)}>
-      <div className="space-y-4">
+    <Card className={cn("p-4 border-0 bg-gradient-to-br from-white to-gray-50/30 shadow-sm", className)}>
+      <div className="space-y-2.5">
         <div>
           <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
           {subtitle && (
@@ -35,7 +35,7 @@ export default function AnalyticsChart({
           )}
         </div>
         
-        <div className="space-y-3">
+        <div className="space-y-2.5">
           {data.map((item, index) => (
             <div key={index} className="space-y-2">
               <div className="flex items-center justify-between text-sm">
@@ -48,7 +48,7 @@ export default function AnalyticsChart({
                 </div>
               </div>
               
-              <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+              <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
                 <div
                   className={cn(
                     "h-full rounded-full transition-all duration-500 ease-out",
@@ -64,7 +64,7 @@ export default function AnalyticsChart({
           ))}
         </div>
         
-        <div className="pt-2 border-t border-gray-100">
+        <div className="pt-1.5 border-t border-gray-100">
           <div className="flex items-center justify-between text-xs text-gray-500">
             <span>Total: {totalValue}</span>
             <span>{data.length} categories</span>

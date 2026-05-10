@@ -40,9 +40,9 @@ function AdminDashboardPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="px-4 sm:px-6 lg:px-8 py-8">
+      <div className="px-4 sm:px-6 lg:px-8 py-6">
         {/* Header */}
-        <div className="mb-8">
+        <div className="mb-6">
           <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Dashboard</h1>
           <p className="mt-2 text-gray-600">
             Welcome back! Here's an overview of your Quranic school management system.
@@ -50,7 +50,7 @@ function AdminDashboardPage() {
         </div>
 
         {/* Key Metrics */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
           <MetricCard
             title="Students"
             value={stats.totalStudents}
@@ -83,7 +83,7 @@ function AdminDashboardPage() {
         </div>
 
         {/* Analytics Section */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
           <AnalyticsChart
             title="Student Demographics"
             subtitle="Gender distribution across all students"
@@ -105,7 +105,7 @@ function AdminDashboardPage() {
         </div>
 
         {/* Trends Section */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
           <TrendChart
             title="Registration Trends"
             subtitle="Monthly student and teacher registrations"
@@ -124,7 +124,7 @@ function AdminDashboardPage() {
         </div>
 
         {/* Bottom Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <MetricCard
             title="Total Users"
             value={stats.totalUsers}

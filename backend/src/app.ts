@@ -16,6 +16,7 @@ import dashboardRouter from "./modules/dashboard/dashboard.route"
 import attendanceRouter from "./modules/attendance/attendance.route"
 import feeRouter from "./modules/fees/fee.route"
 import settingsRouter from "./modules/settings/settings.route"
+import reportsRouter from "./modules/reports/reports.route"
 import { env } from "./config/env"
 import { authenticate, authorize } from "./middlewares/auth.middleware"
 const app = express()
@@ -65,6 +66,7 @@ app.use("/api/dashboard", authenticate, authorize("admin"), dashboardRouter)
 app.use("/api/attendance", authenticate, authorize("admin"), attendanceRouter)
 app.use("/api/fees", authenticate, authorize("admin"), feeRouter)
 app.use("/api/settings", authenticate, authorize("admin"), settingsRouter)
+app.use("/api/reports", authenticate, authorize("admin"), reportsRouter)
 
 
 export default app

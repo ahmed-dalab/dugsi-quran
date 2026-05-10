@@ -13,6 +13,7 @@ const pageNames: Record<string, string> = {
   "/admin/students": "Students",
   "/admin/fees": "Fees",
   "/admin/settings": "Settings",
+  "/admin/reports": "Reports",
  
 };
 
@@ -42,7 +43,7 @@ export default function Topbar({ onOpenMenu }: TopbarProps) {
   }
 
   return (
-    <header className="border-b border-slate-200 bg-white px-4 py-3 md:px-6">
+    <header className="fixed top-0 left-0 right-0 z-40 border-b border-slate-200 bg-white px-4 py-3 md:left-64 md:px-6">
       <div className="flex items-center justify-between gap-4">
         <div className="flex items-center gap-4">
           <Button

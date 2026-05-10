@@ -13,6 +13,7 @@ import TeacherDetails from "@/features/admin/teachers/pages/TeacherDetails";
 import AttendancePage from "@/features/admin/attendance/pages/Attendance";
 import Fees from "@/features/admin/fees/pages/Fees";
 import Settings from "@/features/admin/settings/Settings";
+import Reports from "@/features/admin/reports/pages/Reports";
 
 
 
@@ -60,6 +61,10 @@ export const adminRoutes: AppRouteObject[] = [
             path: "settings",
             element: <Settings />,
 
+          },
+          {
+            path: "reports",
+            element: <Reports />,
           }
         ],
       },

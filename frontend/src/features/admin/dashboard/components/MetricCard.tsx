@@ -25,9 +25,9 @@ export default function MetricCard({
 }: MetricCardProps) {
   return (
     <Card className={cn("relative overflow-hidden border-0 bg-gradient-to-br from-white to-gray-50/50 shadow-sm hover:shadow-md transition-shadow duration-200", className)}>
-      <div className="p-6">
+      <div className="p-4">
         <div className="flex items-start justify-between">
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             <div className="flex items-center gap-2">
               <div className="p-2 rounded-lg bg-primary/5">
                 <Icon className="h-5 w-5 text-primary" />
@@ -35,7 +35,7 @@ export default function MetricCard({
               <span className="text-sm font-medium text-gray-600">{title}</span>
             </div>
             <div className="space-y-1">
-              <p className="text-3xl font-bold text-gray-900 tracking-tight">{value}</p>
+              <p className="text-2xl font-bold text-gray-900 tracking-tight">{value}</p>
               {description && (
                 <p className="text-sm text-gray-500">{description}</p>
               )}

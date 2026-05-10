@@ -24,8 +24,8 @@ export default function TrendChart({ title, subtitle, data, className }: TrendCh
   };
 
   return (
-    <Card className={cn("p-6 border-0 bg-gradient-to-br from-white to-gray-50/30 shadow-sm", className)}>
-      <div className="space-y-6">
+    <Card className={cn("p-4 border-0 bg-gradient-to-br from-white to-gray-50/30 shadow-sm", className)}>
+      <div className="space-y-3">
         <div>
           <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
           {subtitle && (
@@ -33,7 +33,7 @@ export default function TrendChart({ title, subtitle, data, className }: TrendCh
           )}
         </div>
         
-        <div className="space-y-4">
+        <div className="space-y-3">
           <div className="flex items-center justify-between text-sm">
             <div className="flex items-center space-x-6">
               <div className="flex items-center">
@@ -47,14 +47,14 @@ export default function TrendChart({ title, subtitle, data, className }: TrendCh
             </div>
           </div>
           
-          <div className="space-y-4">
+          <div className="space-y-3">
             {data.map((item, index) => (
               <div key={index} className="space-y-2">
                 <div className="text-xs font-medium text-gray-600 uppercase tracking-wider">
                   {item.month}
                 </div>
                 
-                <div className="flex items-end space-x-1 h-16">
+                <div className="flex items-end space-x-1 h-14">
                   <div className="flex-1 flex items-end space-x-1">
                     <div
                       className="flex-1 bg-blue-500 rounded-t-sm transition-all duration-500 ease-out relative group"
@@ -87,8 +87,8 @@ export default function TrendChart({ title, subtitle, data, className }: TrendCh
           </div>
         </div>
         
-        <div className="pt-4 border-t border-gray-100">
-          <div className="grid grid-cols-2 gap-4 text-sm">
+        <div className="pt-3 border-t border-gray-100">
+          <div className="grid grid-cols-2 gap-3 text-sm">
             <div className="text-center">
               <div className="text-2xl font-bold text-gray-900">
                 {data.reduce((sum, item) => sum + item.students, 0)}
