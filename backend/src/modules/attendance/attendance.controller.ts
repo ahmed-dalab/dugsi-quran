@@ -1,88 +1,52 @@
 import type { Request, Response } from "express";
+import { assertFound } from "../../shared/errors/assertFound";
+import { AppError } from "../../shared/errors/AppError";
+import { asyncHandler } from "../../utils/asyncHandler";
+import { getIdParam } from "../../utils/getIdParam";
 import {
   getAttendanceByClassAndDateService,
   getAttendanceHistoryByClassService,
   takeAttendanceService,
 } from "./attendance.service";
 
-const getErrorMessage = (error: unknown) => {
-  if (error instanceof Error) {
-    return error.message;
+export const takeAttendance = asyncHandler(async (req: Request, res: Response) => {
+  const attendance = await takeAttendanceService({
+    ...req.body,
+    takenBy: req.user?.id ?? "",
+  });
+
+  res.status(201).json({
+    message: "Attendance saved successfully",
+    data: attendance,
+  });
+});
+
+export const getAttendanceByClassAndDate = asyncHandler(async (req: Request, res: Response) => {
+  const classId = getIdParam(req.params.classId);
+  const date = typeof req.query.date === "string" ? req.query.date : "";
+
+  if (!date) {
+    throw new AppError(400, "Query param 'date' is required (YYYY-MM-DD)");
   }
 
-  return "Something went wrong";
-};
+  const attendance = assertFound(
+    await getAttendanceByClassAndDateService(classId, date),
+    "Attendance not found for this class and date"
+  );
 
-const getUserIdFromRequest = (req: Request): string => req.user?.id ?? "";
-const getParamValue = (value: string | string[] | undefined): string =>
-  Array.isArray(value) ? value[0] ?? "" : (value ?? "");
+  res.status(200).json({
+    message: "Attendance retrieved successfully",
+    data: attendance,
+  });
+});
 
-export const takeAttendance = async (req: Request, res: Response) => {
-  try {
-    const attendance = await takeAttendanceService({
-      ...req.body,
-      takenBy: getUserIdFromRequest(req),
-    });
+export const getAttendanceHistoryByClass = asyncHandler(async (req: Request, res: Response) => {
+  const classId = getIdParam(req.params.classId);
+  const result = await getAttendanceHistoryByClassService(classId, req.query);
 
-    res.status(201).json({
-      message: "Attendance saved successfully",
-      data: attendance,
-    });
-  } catch (error) {
-    console.log("Error:", error);
-    res.status(400).json({
-      message: getErrorMessage(error),
-    });
-  }
-};
-
-export const getAttendanceByClassAndDate = async (req: Request, res: Response) => {
-  try {
-    const classId = getParamValue(req.params.classId);
-    const date = typeof req.query.date === "string" ? req.query.date : "";
-
-    if (!date) {
-      res.status(400).json({
-        message: "Query param 'date' is required (YYYY-MM-DD)",
-      });
-      return;
-    }
-
-    const attendance = await getAttendanceByClassAndDateService(classId, date);
-
-    if (!attendance) {
-      res.status(404).json({
-        message: "Attendance not found for this class and date",
-      });
-      return;
-    }
-
-    res.status(200).json({
-      message: "Attendance retrieved successfully",
-      data: attendance,
-    });
-  } catch (error) {
-    console.log("Error:", error);
-    res.status(500).json({
-      message: getErrorMessage(error),
-    });
-  }
-};
-
-export const getAttendanceHistoryByClass = async (req: Request, res: Response) => {
-  try {
-    const classId = getParamValue(req.params.classId);
-    const result = await getAttendanceHistoryByClassService(classId, req.query);
-
-    res.status(200).json({
-      message: "Attendance history retrieved successfully",
-      data: result.data,
-      pagination: result.pagination,
-    });
-  } catch (error) {
-    console.log("Error:", error);
-    res.status(500).json({
-      message: getErrorMessage(error),
-    });
-  }
-};
+  res.status(200).json({
+    message: "Attendance history retrieved successfully",
+    data: result.data,
+    pagination: result.pagination,
+  });
+});

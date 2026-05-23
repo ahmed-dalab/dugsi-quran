@@ -1,9 +1,10 @@
 import type { Request, Response, NextFunction } from "express";
 import * as z from "zod";
+import { AppError } from "../shared/errors/AppError";
 
 export const validateRequest =
   (schema: z.ZodType<any>) =>
-  (req: Request, res: Response, next: NextFunction) => {
+  (req: Request, _res: Response, next: NextFunction) => {
     const result = schema.safeParse({
       body: req.body,
       params: req.params,
@@ -16,10 +17,7 @@ export const validateRequest =
         message: err.message,
       }));
 
-      return res.status(400).json({
-        status: "failed",
-        errors,
-      });
+      return next(new AppError(400, "Validation failed", { errors }));
     }
 
     if (result.data.body !== undefined) {
@@ -28,6 +26,10 @@ export const validateRequest =
 
     if (result.data.params !== undefined) {
       req.params = result.data.params;
+    }
+
+    if (result.data.query !== undefined) {
+      req.query = result.data.query;
     }
 
     next();

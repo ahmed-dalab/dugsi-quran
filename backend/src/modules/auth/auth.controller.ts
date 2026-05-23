@@ -1,13 +1,12 @@
 import type { Request, Response } from "express";
-import {User, UserRole} from "../users/user.model";
+import { User, UserRole } from "../users/user.model";
 import bcrypt from "bcryptjs";
-import jwt from "jsonwebtoken";
-import { env } from "../../config/env"
 import { hashToken, signAccessToken, signRefreshToken, verifyRefreshToken } from "../../utils/auth.token";
 import RefreshToken from "./refresh-token.model";
 import { clearRefreshTokenCookie, setRefreshTokenCookie } from "../../utils/auth.cookies";
 import { loginValidationSchema } from "./auth.validations";
-
+import { AppError } from "../../shared/errors/AppError";
+import { asyncHandler } from "../../utils/asyncHandler";
 
 interface IUser {
   _id: string;
@@ -18,195 +17,138 @@ interface IUser {
   isActive: boolean;
 }
 
-// login
-export const login = async (req: Request, res: Response) => {
-    // ✅ VALIDATION FIRST
+export const login = asyncHandler(async (req: Request, res: Response) => {
   const result = loginValidationSchema.safeParse(req.body);
 
   if (!result.success) {
-    return res.status(400).json({
-      status: "failed",
-      message: "Validation error",
-      errors: result.error.format(),
-    });
+    const errors = result.error.issues.map((err) => ({
+      field: err.path.join("."),
+      message: err.message,
+    }));
+
+    throw new AppError(400, "Validation failed", { errors });
   }
-  try {
-  
-   
-    const { email, password } = req.body;
 
-    const user: IUser | null = await User.findOne({ email }).select("+password");
-  
-    if (!user) {
-      return res.status(401).json({
-        status: "failed",
-        message: "Invalid credentials",
-      });
-    }
+  const { email, password } = req.body;
 
-    const isPasswordValid = await bcrypt.compare(password, user.password);
-    if (!isPasswordValid) {
-      return res.status(401).json({
-        status: "failed",
-        message: "Invalid credentials",
-      });
-    }
+  const user: IUser | null = await User.findOne({ email }).select("+password");
 
-    const accessToken = signAccessToken({ _id: user._id, role: user.role as UserRole });
-    const refreshToken = signRefreshToken({_id: user._id });
-    const tokenHash = hashToken(refreshToken);
-
-    await RefreshToken.create({
-      userId: user._id,
-      tokenHash,
-      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-      userAgent: req.get("user-agent") || null,
-      ipAddress: req.ip || null,
-    });
-
-    setRefreshTokenCookie(res, refreshToken);
-
-    return res.status(200).json({
-      status: "success",
-      accessToken,
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-      },
-    });
-  } catch (error) {
-    console.error(error);
-    return res.status(500).json({
-      status: "failed",
-      message: "Something went wrong",
-    });
+  if (!user) {
+    throw new AppError(401, "Invalid credentials");
   }
-};
 
-// refresh token
-export const refreshToken = async (req: Request, res: Response) => {
-  try {
-
-    const refreshTokenFromCookie = req.cookies?.refreshToken;
-
-    if (!refreshTokenFromCookie) {
-      return res.status(401).json({
-        status: "failed",
-        message: "Refresh token missing",
-      });
-    }
-
-    let decoded;
-    try {
-      decoded = verifyRefreshToken(refreshTokenFromCookie);
-    } catch {
-      return res.status(401).json({
-        status: "failed",
-        message: "Invalid or expired refresh token",
-      });
-    }
-
-    const oldTokenHash = hashToken(refreshTokenFromCookie);
-
-    const existingToken = await RefreshToken.findOne({
-      tokenHash: oldTokenHash,
-      revokedAt: null,
-    });
-
-    if (!existingToken) {
-      return res.status(401).json({
-        status: "failed",
-        message: "Refresh token not recognized",
-      });
-    }
-
-    if (existingToken.expiresAt < new Date()) {
-      return res.status(401).json({
-        status: "failed",
-        message: "Refresh token expired",
-      });
-    }
-
-    const user: IUser | null = await User.findById(decoded.sub);
-    if (!user) {
-      return res.status(404).json({
-        status: "failed",
-        message: "User not found",
-      });
-    }
-
-    const newAccessToken = signAccessToken({ _id: user._id, role: user.role as UserRole });
-    const newRefreshToken = signRefreshToken(user);
-    const newTokenHash = hashToken(newRefreshToken);
-
-    existingToken.revokedAt = new Date();
-    existingToken.replacedByTokenHash = newTokenHash;
-    await existingToken.save();
-
-    await RefreshToken.create({
-      userId: user._id,
-      tokenHash: newTokenHash,
-      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-      userAgent: req.get("user-agent") || null,
-      ipAddress: req.ip || null,
-    });
-
-    setRefreshTokenCookie(res, newRefreshToken);
-
-    return res.status(200).json({
-      status: "success",
-      accessToken: newAccessToken,
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-      },
-    });
-  } catch (error) {
-    console.error(error);
-    return res.status(500).json({
-      status: "failed",
-      message: "Something went wrong",
-    });
+  const isPasswordValid = await bcrypt.compare(password, user.password);
+  if (!isPasswordValid) {
+    throw new AppError(401, "Invalid credentials");
   }
-};
 
-/// logout
-export const logout = async (req: Request, res: Response) => {
-  try {
-    const refreshTokenFromCookie = req.cookies.refreshToken;
+  const accessToken = signAccessToken({ _id: user._id, role: user.role as UserRole });
+  const refreshToken = signRefreshToken({ _id: user._id });
+  const tokenHash = hashToken(refreshToken);
 
-    if (refreshTokenFromCookie) {
-      const tokenHash = hashToken(refreshTokenFromCookie);
+  await RefreshToken.create({
+    userId: user._id,
+    tokenHash,
+    expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+    userAgent: req.get("user-agent") || null,
+    ipAddress: req.ip || null,
+  });
 
-      await RefreshToken.findOneAndUpdate(
-        { tokenHash, revokedAt: null },
-        { revokedAt: new Date() }
-      );
-    }
+  setRefreshTokenCookie(res, refreshToken);
 
-    clearRefreshTokenCookie(res);
+  res.status(200).json({
+    status: "success",
+    accessToken,
+    user: {
+      id: user._id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+    },
+  });
+});
 
-    return res.status(200).json({
-      status: "success",
-      message: "Logged out successfully",
-    });
-  } catch (error) {
-    console.error(error);
-    return res.status(500).json({
-      status: "failed",
-      message: "Something went wrong",
-    });
+export const refreshToken = asyncHandler(async (req: Request, res: Response) => {
+  const refreshTokenFromCookie = req.cookies?.refreshToken;
+
+  if (!refreshTokenFromCookie) {
+    throw new AppError(401, "Refresh token missing");
   }
-};
 
-// auth me 
-export const me = async (req: Request, res: Response) => {
-  return res.status(200).json({
+  const decoded = verifyRefreshToken(refreshTokenFromCookie);
+  const oldTokenHash = hashToken(refreshTokenFromCookie);
+
+  const existingToken = await RefreshToken.findOne({
+    tokenHash: oldTokenHash,
+    revokedAt: null,
+  });
+
+  if (!existingToken) {
+    throw new AppError(401, "Refresh token not recognized");
+  }
+
+  if (existingToken.expiresAt < new Date()) {
+    throw new AppError(401, "Refresh token expired");
+  }
+
+  const user: IUser | null = await User.findById(decoded.sub);
+  if (!user) {
+    throw new AppError(404, "User not found");
+  }
+
+  const newAccessToken = signAccessToken({ _id: user._id, role: user.role as UserRole });
+  const newRefreshToken = signRefreshToken(user);
+  const newTokenHash = hashToken(newRefreshToken);
+
+  existingToken.revokedAt = new Date();
+  existingToken.replacedByTokenHash = newTokenHash;
+  await existingToken.save();
+
+  await RefreshToken.create({
+    userId: user._id,
+    tokenHash: newTokenHash,
+    expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+    userAgent: req.get("user-agent") || null,
+    ipAddress: req.ip || null,
+  });
+
+  setRefreshTokenCookie(res, newRefreshToken);
+
+  res.status(200).json({
+    status: "success",
+    accessToken: newAccessToken,
+    user: {
+      id: user._id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+    },
+  });
+});
+
+export const logout = asyncHandler(async (req: Request, res: Response) => {
+  const refreshTokenFromCookie = req.cookies.refreshToken;
+
+  if (refreshTokenFromCookie) {
+    const tokenHash = hashToken(refreshTokenFromCookie);
+
+    await RefreshToken.findOneAndUpdate(
+      { tokenHash, revokedAt: null },
+      { revokedAt: new Date() }
+    );
+  }
+
+  clearRefreshTokenCookie(res);
+
+  res.status(200).json({
+    status: "success",
+    message: "Logged out successfully",
+  });
+});
+
+export const me = asyncHandler(async (req: Request, res: Response) => {
+  res.status(200).json({
     status: "success",
     user: req.user,
   });
-};1
+});

@@ -1,4 +1,7 @@
 import type { Request, Response } from "express";
+import { assertFound } from "../../shared/errors/assertFound";
+import { asyncHandler } from "../../utils/asyncHandler";
+import { getIdParam } from "../../utils/getIdParam";
 import {
   createClassService,
   deleteClassService,
@@ -7,129 +10,57 @@ import {
   updateClassService,
 } from "./class.service";
 
-const getIdParam = (id: string | string[] | undefined) => {
-  if (Array.isArray(id)) {
-    return id[0];
-  }
+export const createClass = asyncHandler(async (req: Request, res: Response) => {
+  const classItem = await createClassService(req.body);
 
-  return id ?? "";
-};
+  res.status(201).json({
+    message: "Class created successfully",
+    data: classItem,
+  });
+});
 
-const getErrorMessage = (error: unknown) => {
-  if (
-    typeof error === "object" &&
-    error !== null &&
-    "code" in error &&
-    error.code === 11000
-  ) {
-    return "A class with this unique value already exists";
-  }
+export const getClasses = asyncHandler(async (req: Request, res: Response) => {
+  const result = await getClassesService(req.query);
 
-  if (error instanceof Error) {
-    return error.message;
-  }
+  res.status(200).json({
+    message: "Classes retrieved successfully",
+    data: result.data,
+    pagination: result.pagination,
+  });
+});
 
-  return "Something went wrong";
-};
+export const getClass = asyncHandler(async (req: Request, res: Response) => {
+  const classItem = assertFound(
+    await getClassByIdService(getIdParam(req.params.id)),
+    "Class not found"
+  );
 
-export const createClass = async (req: Request, res: Response) => {
-  try {
-    const classItem = await createClassService(req.body);
+  res.status(200).json({
+    message: "Class retrieved successfully",
+    data: classItem,
+  });
+});
 
-    res.status(201).json({
-      message: "Class created successfully",
-      data: classItem,
-    });
-  } catch (error) {
-    console.log("Error:", error);
-    res.status(400).json({
-      message: getErrorMessage(error),
-    });
-  }
-};
+export const updateClass = asyncHandler(async (req: Request, res: Response) => {
+  const classItem = assertFound(
+    await updateClassService(getIdParam(req.params.id), req.body),
+    "Class not found"
+  );
 
-export const getClasses = async (req: Request, res: Response) => {
-  try {
-    const result = await getClassesService(req.query);
+  res.status(200).json({
+    message: "Class updated successfully",
+    data: classItem,
+  });
+});
 
-    res.status(200).json({
-      message: "Classes retrieved successfully",
-      data: result.data,
-      pagination: result.pagination,
-    });
-  } catch (error) {
-    console.log("Error:", error);
-    res.status(500).json({
-      message: getErrorMessage(error),
-    });
-  }
-};
+export const deleteClass = asyncHandler(async (req: Request, res: Response) => {
+  const classItem = assertFound(
+    await deleteClassService(getIdParam(req.params.id)),
+    "Class not found"
+  );
 
-export const getClass = async (req: Request, res: Response) => {
-  try {
-    const classItem = await getClassByIdService(getIdParam(req.params.id));
-
-    if (!classItem) {
-      res.status(404).json({
-        message: "Class not found",
-      });
-      return;
-    }
-
-    res.status(200).json({
-      message: "Class retrieved successfully",
-      data: classItem,
-    });
-  } catch (error) {
-    console.log("Error:", error);
-    res.status(500).json({
-      message: getErrorMessage(error),
-    });
-  }
-};
-
-export const updateClass = async (req: Request, res: Response) => {
-  try {
-    const classItem = await updateClassService(getIdParam(req.params.id), req.body);
-
-    if (!classItem) {
-      res.status(404).json({
-        message: "Class not found",
-      });
-      return;
-    }
-
-    res.status(200).json({
-      message: "Class updated successfully",
-      data: classItem,
-    });
-  } catch (error) {
-    console.log("Error:", error);
-    res.status(400).json({
-      message: getErrorMessage(error),
-    });
-  }
-};
-
-export const deleteClass = async (req: Request, res: Response) => {
-  try {
-    const classItem = await deleteClassService(getIdParam(req.params.id));
-
-    if (!classItem) {
-      res.status(404).json({
-        message: "Class not found",
-      });
-      return;
-    }
-
-    res.status(200).json({
-      message: "Class deleted successfully",
-      data: classItem,
-    });
-  } catch (error) {
-    console.log("Error:", error);
-    res.status(500).json({
-      message: getErrorMessage(error),
-    });
-  }
-};
+  res.status(200).json({
+    message: "Class deleted successfully",
+    data: classItem,
+  });
+});

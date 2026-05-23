@@ -1,4 +1,5 @@
 import { isValidObjectId } from "mongoose";
+import { AppError } from "../../shared/errors/AppError";
 import type { Request } from "express";
 import { AssignmentModel, type ITeacherClassAssignment } from "./assignment.model";
 import { TeacherModel } from "../teachers/teacher.model";
@@ -43,7 +44,7 @@ export const createAssignmentService = async (payload: CreateAssignmentPayload) 
   // Check if teacher exists
   const teacher = await TeacherModel.findById(teacherId);
   if (!teacher) {
-    throw new Error("Teacher not found");
+    throw new AppError(404, "Teacher not found");
   }
 
   // Check if there's already an active assignment for this teacher and class
@@ -54,7 +55,7 @@ export const createAssignmentService = async (payload: CreateAssignmentPayload) 
   });
 
   if (existingAssignment) {
-    throw new Error("Teacher is already assigned to this class");
+    throw new AppError(409, "Teacher is already assigned to this class");
   }
 
   // End any existing active assignments for this teacher (teacher can only have one active class at a time)

@@ -1,4 +1,7 @@
 import type { Request, Response } from "express";
+import { assertFound } from "../../shared/errors/assertFound";
+import { asyncHandler } from "../../utils/asyncHandler";
+import { getIdParam } from "../../utils/getIdParam";
 import {
   createFeeService,
   deleteFeeService,
@@ -7,120 +10,57 @@ import {
   updateFeeService,
 } from "./fee.service";
 
-const getIdParam = (id: string | string[] | undefined) => {
-  if (Array.isArray(id)) {
-    return id[0];
-  }
+export const createFee = asyncHandler(async (req: Request, res: Response) => {
+  const fee = assertFound(await createFeeService(req.body, req.user?.id), "Fee payment not found");
 
-  return id ?? "";
-};
+  res.status(201).json({
+    message: "Fee payment created successfully",
+    data: fee,
+  });
+});
 
-const getErrorMessage = (error: unknown) => {
-  if (error instanceof Error) {
-    return error.message;
-  }
+export const getFees = asyncHandler(async (req: Request, res: Response) => {
+  const result = await getFeesService(req.query);
 
-  return "Something went wrong";
-};
+  res.status(200).json({
+    message: "Fee payments retrieved successfully",
+    data: result.data,
+    pagination: result.pagination,
+  });
+});
 
-export const createFee = async (req: Request, res: Response) => {
-  try {
-    const fee = await createFeeService(req.body, req.user?.id);
+export const getFee = asyncHandler(async (req: Request, res: Response) => {
+  const fee = assertFound(
+    await getFeeByIdService(getIdParam(req.params.id)),
+    "Fee payment not found"
+  );
 
-    res.status(201).json({
-      message: "Fee payment created successfully",
-      data: fee,
-    });
-  } catch (error) {
-    console.log("Error:", error);
-    res.status(400).json({
-      message: getErrorMessage(error),
-    });
-  }
-};
+  res.status(200).json({
+    message: "Fee payment retrieved successfully",
+    data: fee,
+  });
+});
 
-export const getFees = async (req: Request, res: Response) => {
-  try {
-    const result = await getFeesService(req.query);
+export const updateFee = asyncHandler(async (req: Request, res: Response) => {
+  const fee = assertFound(
+    await updateFeeService(getIdParam(req.params.id), req.body),
+    "Fee payment not found"
+  );
 
-    res.status(200).json({
-      message: "Fee payments retrieved successfully",
-      data: result.data,
-      pagination: result.pagination,
-    });
-  } catch (error) {
-    console.log("Error:", error);
-    res.status(500).json({
-      message: getErrorMessage(error),
-    });
-  }
-};
+  res.status(200).json({
+    message: "Fee payment updated successfully",
+    data: fee,
+  });
+});
 
-export const getFee = async (req: Request, res: Response) => {
-  try {
-    const fee = await getFeeByIdService(getIdParam(req.params.id));
+export const deleteFee = asyncHandler(async (req: Request, res: Response) => {
+  const fee = assertFound(
+    await deleteFeeService(getIdParam(req.params.id)),
+    "Fee payment not found"
+  );
 
-    if (!fee) {
-      res.status(404).json({
-        message: "Fee payment not found",
-      });
-      return;
-    }
-
-    res.status(200).json({
-      message: "Fee payment retrieved successfully",
-      data: fee,
-    });
-  } catch (error) {
-    console.log("Error:", error);
-    res.status(500).json({
-      message: getErrorMessage(error),
-    });
-  }
-};
-
-export const updateFee = async (req: Request, res: Response) => {
-  try {
-    const fee = await updateFeeService(getIdParam(req.params.id), req.body);
-
-    if (!fee) {
-      res.status(404).json({
-        message: "Fee payment not found",
-      });
-      return;
-    }
-
-    res.status(200).json({
-      message: "Fee payment updated successfully",
-      data: fee,
-    });
-  } catch (error) {
-    console.log("Error:", error);
-    res.status(400).json({
-      message: getErrorMessage(error),
-    });
-  }
-};
-
-export const deleteFee = async (req: Request, res: Response) => {
-  try {
-    const fee = await deleteFeeService(getIdParam(req.params.id));
-
-    if (!fee) {
-      res.status(404).json({
-        message: "Fee payment not found",
-      });
-      return;
-    }
-
-    res.status(200).json({
-      message: "Fee payment deleted successfully",
-      data: fee,
-    });
-  } catch (error) {
-    console.log("Error:", error);
-    res.status(500).json({
-      message: getErrorMessage(error),
-    });
-  }
-};
+  res.status(200).json({
+    message: "Fee payment deleted successfully",
+    data: fee,
+  });
+});

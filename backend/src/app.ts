@@ -4,6 +4,7 @@ import cors from "cors"
 import cookieParser from "cookie-parser";
 import v1Router from "./routes/v1.routes"
 import { env } from "./config/env"
+import { errorHandler, notFoundHandler } from "./middlewares/error.middleware"
 
 const app = express()
 
@@ -44,5 +45,7 @@ app.get('/api/health', (req: Request, res: Response)=>{
 
 app.use(env.API_PREFIX, v1Router)
 
+app.use(notFoundHandler)
+app.use(errorHandler)
 
 export default app

@@ -1,4 +1,5 @@
 import { isValidObjectId } from "mongoose";
+import { AppError } from "../../shared/errors/AppError";
 import type { Request } from "express";
 import { AttendanceModel, type AttendanceStatus } from "./attendance.model";
 import { ClassModel } from "../classes/class.model";
@@ -44,16 +45,16 @@ export const takeAttendanceService = async (payload: TakeAttendancePayload) => {
   const { classId, date, records, takenBy } = payload;
 
   if (!isValidObjectId(classId)) {
-    throw new Error("Invalid class id");
+    throw new AppError(400, "Invalid class id");
   }
 
   if (!isValidDateString(date)) {
-    throw new Error("Date must be in YYYY-MM-DD format");
+    throw new AppError(400, "Date must be in YYYY-MM-DD format");
   }
 
   const classItem = await ClassModel.findById(classId).lean();
   if (!classItem) {
-    throw new Error("Class not found");
+    throw new AppError(404, "Class not found");
   }
 
   const activeStudents = await StudentModel.find({
@@ -66,21 +67,21 @@ export const takeAttendanceService = async (payload: TakeAttendancePayload) => {
   const activeStudentIds = new Set(activeStudents.map((s) => s._id.toString()));
 
   if (records.length === 0) {
-    throw new Error("Attendance records are required");
+    throw new AppError(400, "Attendance records are required");
   }
 
   const uniqueStudents = new Set<string>();
   for (const record of records) {
     if (!isValidObjectId(record.studentId)) {
-      throw new Error(`Invalid student id: ${record.studentId}`);
+      throw new AppError(400, `Invalid student id: ${record.studentId}`);
     }
 
     if (!activeStudentIds.has(record.studentId)) {
-      throw new Error("One or more students do not belong to this class");
+      throw new AppError(400, "One or more students do not belong to this class");
     }
 
     if (uniqueStudents.has(record.studentId)) {
-      throw new Error("Duplicate student attendance record found");
+      throw new AppError(400, "Duplicate student attendance record found");
     }
 
     uniqueStudents.add(record.studentId);

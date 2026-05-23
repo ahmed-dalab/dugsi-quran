@@ -1,4 +1,7 @@
-import { Request, Response } from "express";
+import type { Request, Response } from "express";
+import { assertFound } from "../../shared/errors/assertFound";
+import { asyncHandler } from "../../utils/asyncHandler";
+import { getIdParam } from "../../utils/getIdParam";
 import {
   createUserService,
   deleteUserService,
@@ -8,158 +11,69 @@ import {
   updateUserService,
 } from "./user.service";
 
-const getIdParam = (id: string | string[] | undefined) => {
-  if (Array.isArray(id)) {
-    return id[0];
-  }
+export const createUser = asyncHandler(async (req: Request, res: Response) => {
+  const user = await createUserService(req.body);
 
-  return id ?? "";
-};
+  res.status(201).json({
+    message: "User created successfully",
+    data: user,
+  });
+});
 
-const getErrorMessage = (error: unknown) => {
-  if (
-    typeof error === "object" &&
-    error !== null &&
-    "code" in error &&
-    error.code === 11000
-  ) {
-    return "A user with this email already exists";
-  }
+export const getUsers = asyncHandler(async (req: Request, res: Response) => {
+  const result = await getUsersService(req.query);
 
-  if (error instanceof Error) {
-    return error.message;
-  }
+  res.status(200).json({
+    message: "Users retrieved successfully",
+    data: result.data,
+    pagination: result.pagination,
+  });
+});
 
-  return "Something went wrong";
-};
+export const getUser = asyncHandler(async (req: Request, res: Response) => {
+  const user = assertFound(
+    await getUserByIdService(getIdParam(req.params.id)),
+    "User not found"
+  );
 
-// create user
-export const createUser = async (req: Request, res: Response) => {
-  try {
-    const user = await createUserService(req.body);
+  res.status(200).json({
+    message: "User retrieved successfully",
+    data: user,
+  });
+});
 
-    res.status(201).json({
-      message: "User created successfully",
-      data: user,
-    });
-  } catch (error) {
-    console.log("Error:", error);
-    res.status(400).json({
-      message: getErrorMessage(error),
-    });
-  }
-};
+export const updateUser = asyncHandler(async (req: Request, res: Response) => {
+  const user = assertFound(
+    await updateUserService(getIdParam(req.params.id), req.body),
+    "User not found"
+  );
 
-// get users
-export const getUsers = async (req: Request, res: Response) => {
-  try {
-    const result = await getUsersService(req.query);
+  res.status(200).json({
+    message: "User updated successfully",
+    data: user,
+  });
+});
 
-    res.status(200).json({
-      message: "Users retrieved successfully",
-      data: result.data,
-      pagination: result.pagination,
-    });
-  } catch (error) {
-    console.log("Error:", error);
-    res.status(500).json({
-      message: getErrorMessage(error),
-    });
-  }
-};
+export const deleteUser = asyncHandler(async (req: Request, res: Response) => {
+  const user = assertFound(
+    await deleteUserService(getIdParam(req.params.id)),
+    "User not found"
+  );
 
-// get user
-export const getUser = async (req: Request, res: Response) => {
-  try {
-    const user = await getUserByIdService(getIdParam(req.params.id));
+  res.status(200).json({
+    message: "User deleted successfully",
+    data: user,
+  });
+});
 
-    if (!user) {
-      res.status(404).json({
-        message: "User not found",
-      });
-      return;
-    }
+export const toggleUserStatus = asyncHandler(async (req: Request, res: Response) => {
+  const user = assertFound(
+    await toggleUserStatusService(getIdParam(req.params.id)),
+    "User not found"
+  );
 
-    res.status(200).json({
-      message: "User retrieved successfully",
-      data: user,
-    });
-  } catch (error) {
-    console.log("Error:", error);
-    res.status(500).json({
-      message: getErrorMessage(error),
-    });
-  }
-};
-
-// update user
-export const updateUser = async (req: Request, res: Response) => {
-  try {
-    const user = await updateUserService(getIdParam(req.params.id), req.body);
-
-    if (!user) {
-      res.status(404).json({
-        message: "User not found",
-      });
-      return;
-    }
-
-    res.status(200).json({
-      message: "User updated successfully",
-      data: user,
-    });
-  } catch (error) {
-    console.log("Error:", error);
-    res.status(400).json({
-      message: getErrorMessage(error),
-    });
-  }
-};
-
-// delete user
-export const deleteUser = async (req: Request, res: Response) => {
-  try {
-    const user = await deleteUserService(getIdParam(req.params.id));
-
-    if (!user) {
-      res.status(404).json({
-        message: "User not found",
-      });
-      return;
-    }
-
-    res.status(200).json({
-      message: "User deleted successfully",
-      data: user,
-    });
-  } catch (error) {
-    console.log("Error:", error);
-    res.status(500).json({
-      message: getErrorMessage(error),
-    });
-  }
-};
-
-// toggle user status
-export const toggleUserStatus = async (req: Request, res: Response) => {
-  try {
-    const user = await toggleUserStatusService(getIdParam(req.params.id));
-
-    if (!user) {
-      res.status(404).json({
-        message: "User not found",
-      });
-      return;
-    }
-
-    res.status(200).json({
-      message: "User status updated successfully",
-      data: user,
-    });
-  } catch (error) {
-    console.log("Error:", error);
-    res.status(400).json({
-      message: getErrorMessage(error),
-    });
-  }
-};
+  res.status(200).json({
+    message: "User status updated successfully",
+    data: user,
+  });
+});

@@ -1,4 +1,7 @@
 import type { Request, Response } from "express";
+import { assertFound } from "../../shared/errors/assertFound";
+import { asyncHandler } from "../../utils/asyncHandler";
+import { getIdParam } from "../../utils/getIdParam";
 import {
   createAssignmentService,
   deleteAssignmentService,
@@ -10,184 +13,94 @@ import {
   getCurrentAssignmentForTeacherService,
 } from "./assignment.service";
 
-const getIdParam = (id: string | string[] | undefined) => {
-  if (Array.isArray(id)) {
-    return id[0];
-  }
+export const createAssignment = asyncHandler(async (req: Request, res: Response) => {
+  const assignment = await createAssignmentService({
+    ...req.body,
+    assignedBy: req.user!.id,
+  });
 
-  return id ?? "";
-};
+  res.status(201).json({
+    message: "Assignment created successfully",
+    data: assignment,
+  });
+});
 
-const getErrorMessage = (error: unknown) => {
-  if (error instanceof Error) {
-    return error.message;
-  }
+export const getAssignments = asyncHandler(async (req: Request, res: Response) => {
+  const result = await getAssignmentsService(req.query);
 
-  return "Something went wrong";
-};
+  res.status(200).json({
+    message: "Assignments retrieved successfully",
+    data: result.data,
+    pagination: result.pagination,
+  });
+});
 
-export const createAssignment = async (req: Request, res: Response) => {
-  try {
-    // Add the current admin user as the assignedBy
-    const payload = {
-      ...req.body,
-      assignedBy: (req as any).user.id,
-    };
+export const getAssignment = asyncHandler(async (req: Request, res: Response) => {
+  const assignment = assertFound(
+    await getAssignmentByIdService(getIdParam(req.params.id)),
+    "Assignment not found"
+  );
 
-    const assignment = await createAssignmentService(payload);
+  res.status(200).json({
+    message: "Assignment retrieved successfully",
+    data: assignment,
+  });
+});
 
-    res.status(201).json({
-      message: "Assignment created successfully",
-      data: assignment,
-    });
-  } catch (error) {
-    console.log("Error:", error);
-    res.status(400).json({
-      message: getErrorMessage(error),
-    });
-  }
-};
+export const getAssignmentsByTeacher = asyncHandler(async (req: Request, res: Response) => {
+  const result = await getAssignmentsByTeacherService(
+    getIdParam(req.params.teacherId),
+    req.query
+  );
 
-export const getAssignments = async (req: Request, res: Response) => {
-  try {
-    const result = await getAssignmentsService(req.query);
+  res.status(200).json({
+    message: "Teacher assignments retrieved successfully",
+    data: result.data,
+    pagination: result.pagination,
+  });
+});
 
-    res.status(200).json({
-      message: "Assignments retrieved successfully",
-      data: result.data,
-      pagination: result.pagination,
-    });
-  } catch (error) {
-    console.log("Error:", error);
-    res.status(500).json({
-      message: getErrorMessage(error),
-    });
-  }
-};
+export const getAssignmentsByClass = asyncHandler(async (req: Request, res: Response) => {
+  const result = await getAssignmentsByClassService(getIdParam(req.params.classId), req.query);
 
-export const getAssignment = async (req: Request, res: Response) => {
-  try {
-    const assignment = await getAssignmentByIdService(getIdParam(req.params.id));
+  res.status(200).json({
+    message: "Class assignments retrieved successfully",
+    data: result.data,
+    pagination: result.pagination,
+  });
+});
 
-    if (!assignment) {
-      res.status(404).json({
-        message: "Assignment not found",
-      });
-      return;
-    }
+export const getCurrentAssignmentForTeacher = asyncHandler(async (req: Request, res: Response) => {
+  const assignment = await getCurrentAssignmentForTeacherService(
+    getIdParam(req.params.teacherId)
+  );
 
-    res.status(200).json({
-      message: "Assignment retrieved successfully",
-      data: assignment,
-    });
-  } catch (error) {
-    console.log("Error:", error);
-    res.status(500).json({
-      message: getErrorMessage(error),
-    });
-  }
-};
+  res.status(200).json({
+    message: assignment ? "Current assignment retrieved successfully" : "No active assignment found",
+    data: assignment,
+  });
+});
 
-export const getAssignmentsByTeacher = async (req: Request, res: Response) => {
-  try {
-    const result = await getAssignmentsByTeacherService(getIdParam(req.params.teacherId), req.query);
+export const updateAssignment = asyncHandler(async (req: Request, res: Response) => {
+  const assignment = assertFound(
+    await updateAssignmentService(getIdParam(req.params.id), req.body),
+    "Assignment not found"
+  );
 
-    res.status(200).json({
-      message: "Teacher assignments retrieved successfully",
-      data: result.data,
-      pagination: result.pagination,
-    });
-  } catch (error) {
-    console.log("Error:", error);
-    res.status(500).json({
-      message: getErrorMessage(error),
-    });
-  }
-};
+  res.status(200).json({
+    message: "Assignment updated successfully",
+    data: assignment,
+  });
+});
 
-export const getAssignmentsByClass = async (req: Request, res: Response) => {
-  try {
-    const result = await getAssignmentsByClassService(getIdParam(req.params.classId), req.query);
+export const deleteAssignment = asyncHandler(async (req: Request, res: Response) => {
+  const assignment = assertFound(
+    await deleteAssignmentService(getIdParam(req.params.id)),
+    "Assignment not found"
+  );
 
-    res.status(200).json({
-      message: "Class assignments retrieved successfully",
-      data: result.data,
-      pagination: result.pagination,
-    });
-  } catch (error) {
-    console.log("Error:", error);
-    res.status(500).json({
-      message: getErrorMessage(error),
-    });
-  }
-};
-
-export const getCurrentAssignmentForTeacher = async (req: Request, res: Response) => {
-  try {
-    const assignment = await getCurrentAssignmentForTeacherService(getIdParam(req.params.teacherId));
-
-    if (!assignment) {
-      res.status(200).json({
-        message: "No active assignment found",
-        data: null,
-      });
-      return;
-    }
-
-    res.status(200).json({
-      message: "Current assignment retrieved successfully",
-      data: assignment,
-    });
-  } catch (error) {
-    console.log("Error:", error);
-    res.status(500).json({
-      message: getErrorMessage(error),
-    });
-  }
-};
-
-export const updateAssignment = async (req: Request, res: Response) => {
-  try {
-    const assignment = await updateAssignmentService(getIdParam(req.params.id), req.body);
-
-    if (!assignment) {
-      res.status(404).json({
-        message: "Assignment not found",
-      });
-      return;
-    }
-
-    res.status(200).json({
-      message: "Assignment updated successfully",
-      data: assignment,
-    });
-  } catch (error) {
-    console.log("Error:", error);
-    res.status(400).json({
-      message: getErrorMessage(error),
-    });
-  }
-};
-
-export const deleteAssignment = async (req: Request, res: Response) => {
-  try {
-    const assignment = await deleteAssignmentService(getIdParam(req.params.id));
-
-    if (!assignment) {
-      res.status(404).json({
-        message: "Assignment not found",
-      });
-      return;
-    }
-
-    res.status(200).json({
-      message: "Assignment deleted successfully",
-      data: assignment,
-    });
-  } catch (error) {
-    console.log("Error:", error);
-    res.status(500).json({
-      message: getErrorMessage(error),
-    });
-  }
-};
+  res.status(200).json({
+    message: "Assignment deleted successfully",
+    data: assignment,
+  });
+});

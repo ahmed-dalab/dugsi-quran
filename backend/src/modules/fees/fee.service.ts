@@ -1,4 +1,5 @@
 import { isValidObjectId, type Types } from "mongoose";
+import { AppError } from "../../shared/errors/AppError";
 import type { Request } from "express";
 import { ClassModel } from "../classes/class.model";
 import { StudentModel } from "../students/student.model";
@@ -41,23 +42,23 @@ const deriveStatus = (amountDue: number, amountPaid: number): FeePaymentStatus =
 
 const normalizeCreatePayload = async (payload: CreateFeePayload) => {
   if (!isValidObjectId(payload.studentId)) {
-    throw new Error("Invalid student id");
+    throw new AppError(400, "Invalid student id");
   }
 
   const student = await StudentModel.findById(payload.studentId).lean();
 
   if (!student) {
-    throw new Error("Student not found");
+    throw new AppError(404, "Student not found");
   }
 
   const classId = payload.classId ?? student.classId;
 
   if (!isValidObjectId(classId)) {
-    throw new Error("Invalid class id");
+    throw new AppError(400, "Invalid class id");
   }
 
   if (String(student.classId) !== String(classId)) {
-    throw new Error("Selected class does not match student's class");
+    throw new AppError(400, "Selected class does not match student's class");
   }
 
   let amountDue = payload.amountDue;
@@ -65,7 +66,7 @@ const normalizeCreatePayload = async (payload: CreateFeePayload) => {
   if (amountDue === 0) {
     const classItem = await ClassModel.findById(classId).lean();
     if (!classItem) {
-      throw new Error("Class not found");
+      throw new AppError(404, "Class not found");
     }
     amountDue = classItem.monthlyFee;
   }
@@ -73,7 +74,7 @@ const normalizeCreatePayload = async (payload: CreateFeePayload) => {
   const amountPaid = payload.amountPaid ?? 0;
 
   if (amountPaid > amountDue) {
-    throw new Error("Amount paid cannot exceed amount due");
+    throw new AppError(400, "Amount paid cannot exceed amount due");
   }
 
   return {
@@ -176,7 +177,7 @@ export const updateFeeService = async (id: string, payload: UpdateFeePayload) =>
   const amountPaid = payload.amountPaid ?? existing.amountPaid;
 
   if (amountPaid > amountDue) {
-    throw new Error("Amount paid cannot exceed amount due");
+    throw new AppError(400, "Amount paid cannot exceed amount due");
   }
 
   const status = deriveStatus(amountDue, amountPaid);

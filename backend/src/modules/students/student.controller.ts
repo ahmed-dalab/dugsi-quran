@@ -1,4 +1,7 @@
 import type { Request, Response } from "express";
+import { assertFound } from "../../shared/errors/assertFound";
+import { asyncHandler } from "../../utils/asyncHandler";
+import { getIdParam } from "../../utils/getIdParam";
 import {
   createStudentService,
   deleteStudentService,
@@ -7,120 +10,57 @@ import {
   updateStudentService,
 } from "./student.service";
 
-const getIdParam = (id: string | string[] | undefined) => {
-  if (Array.isArray(id)) {
-    return id[0];
-  }
+export const createStudent = asyncHandler(async (req: Request, res: Response) => {
+  const student = await createStudentService(req.body);
 
-  return id ?? "";
-};
+  res.status(201).json({
+    message: "Student created successfully",
+    data: student,
+  });
+});
 
-const getErrorMessage = (error: unknown) => {
-  if (error instanceof Error) {
-    return error.message;
-  }
+export const getStudents = asyncHandler(async (req: Request, res: Response) => {
+  const result = await getStudentsService(req.query);
 
-  return "Something went wrong";
-};
+  res.status(200).json({
+    message: "Students retrieved successfully",
+    data: result.data,
+    pagination: result.pagination,
+  });
+});
 
-export const createStudent = async (req: Request, res: Response) => {
-  try {
-    const student = await createStudentService(req.body);
+export const getStudent = asyncHandler(async (req: Request, res: Response) => {
+  const student = assertFound(
+    await getStudentByIdService(getIdParam(req.params.id)),
+    "Student not found"
+  );
 
-    res.status(201).json({
-      message: "Student created successfully",
-      data: student,
-    });
-  } catch (error) {
-    console.log("Error:", error);
-    res.status(400).json({
-      message: getErrorMessage(error),
-    });
-  }
-};
+  res.status(200).json({
+    message: "Student retrieved successfully",
+    data: student,
+  });
+});
 
-export const getStudents = async (req: Request, res: Response) => {
-  try {
-    const result = await getStudentsService(req.query);
+export const updateStudent = asyncHandler(async (req: Request, res: Response) => {
+  const student = assertFound(
+    await updateStudentService(getIdParam(req.params.id), req.body),
+    "Student not found"
+  );
 
-    res.status(200).json({
-      message: "Students retrieved successfully",
-      data: result.data,
-      pagination: result.pagination,
-    });
-  } catch (error) {
-    console.log("Error:", error);
-    res.status(500).json({
-      message: getErrorMessage(error),
-    });
-  }
-};
+  res.status(200).json({
+    message: "Student updated successfully",
+    data: student,
+  });
+});
 
-export const getStudent = async (req: Request, res: Response) => {
-  try {
-    const student = await getStudentByIdService(getIdParam(req.params.id));
+export const deleteStudent = asyncHandler(async (req: Request, res: Response) => {
+  const student = assertFound(
+    await deleteStudentService(getIdParam(req.params.id)),
+    "Student not found"
+  );
 
-    if (!student) {
-      res.status(404).json({
-        message: "Student not found",
-      });
-      return;
-    }
-
-    res.status(200).json({
-      message: "Student retrieved successfully",
-      data: student,
-    });
-  } catch (error) {
-    console.log("Error:", error);
-    res.status(500).json({
-      message: getErrorMessage(error),
-    });
-  }
-};
-
-export const updateStudent = async (req: Request, res: Response) => {
-  try {
-    const student = await updateStudentService(getIdParam(req.params.id), req.body);
-
-    if (!student) {
-      res.status(404).json({
-        message: "Student not found",
-      });
-      return;
-    }
-
-    res.status(200).json({
-      message: "Student updated successfully",
-      data: student,
-    });
-  } catch (error) {
-    console.log("Error:", error);
-    res.status(400).json({
-      message: getErrorMessage(error),
-    });
-  }
-};
-
-export const deleteStudent = async (req: Request, res: Response) => {
-  try {
-    const student = await deleteStudentService(getIdParam(req.params.id));
-
-    if (!student) {
-      res.status(404).json({
-        message: "Student not found",
-      });
-      return;
-    }
-
-    res.status(200).json({
-      message: "Student deleted successfully",
-      data: student,
-    });
-  } catch (error) {
-    console.log("Error:", error);
-    res.status(500).json({
-      message: getErrorMessage(error),
-    });
-  }
-};
+  res.status(200).json({
+    message: "Student deleted successfully",
+    data: student,
+  });
+});
