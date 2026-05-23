@@ -1,6 +1,6 @@
-import express, { Request, Response} from "express"
+import express, { Request, Response } from "express"
 import helmet from "helmet"
-import cors from "cors"
+import cors, { type CorsOptions } from "cors"
 import cookieParser from "cookie-parser";
 import v1Router from "./routes/v1.routes"
 import { env } from "./config/env"
@@ -19,22 +19,28 @@ app.use(helmet())
 app.use(cookieParser());
 const allowedOrigins = env.CORS_ALLOWED_ORIGINS;
 
-app.use(
-  cors({
-    origin: (origin, callback) => {
-      // allow non-browser requests
-      if (!origin) return callback(null, true);
+const corsOptions: CorsOptions = {
+  origin: (
+    origin: string | undefined,
+    callback: (err: Error | null, allow?: boolean) => void
+  ) => {
+    // allow non-browser requests (Postman, server-to-server)
+    if (!origin) {
+      callback(null, true);
+      return;
+    }
 
-      if (allowedOrigins.includes(origin)) {
-        return callback(null, true);
-      }
+    if (allowedOrigins.includes(origin)) {
+      callback(null, true);
+      return;
+    }
 
-      // cleaner rejection
-      return callback(null, false);
-    },
-    credentials: true,
-  })
-);
+    callback(null, false);
+  },
+  credentials: true,
+};
+
+app.use(cors(corsOptions));
 
 
 app.get('/api/health', async (_req: Request, res: Response)=>{ 
