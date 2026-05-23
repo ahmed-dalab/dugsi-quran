@@ -4,6 +4,7 @@ import cors from "cors"
 import cookieParser from "cookie-parser";
 import v1Router from "./routes/v1.routes"
 import { env } from "./config/env"
+import { isDbConnected } from "./config/database"
 import { errorHandler, notFoundHandler } from "./middlewares/error.middleware"
 
 const app = express()
@@ -40,6 +41,8 @@ app.get('/api/health', (req: Request, res: Response)=>{
     res.status(200).json({
         message: "Server is health",
         version: env.API_VERSION,
+        database: isDbConnected() ? "connected" : "disconnected",
+        hasDatabaseUrl: Boolean(env.DATABASE_URL),
     })
 })
 
