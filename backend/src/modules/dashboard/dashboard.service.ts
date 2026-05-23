@@ -1,8 +1,4 @@
-import { User } from "../users/user.model";
-import { StudentModel } from "../students/student.model";
-import { TeacherModel } from "../teachers/teacher.model";
-import { AssignmentModel } from "../assignments/assignment.model";
-import { ClassModel } from "../classes/class.model";
+import { dashboardRepository } from "./dashboard.repository";
 
 export interface DashboardStats {
   totalUsers: number;
@@ -17,152 +13,67 @@ export interface DashboardStats {
   classDistribution: { className: string; studentCount: number }[];
 }
 
+const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
 export const getDashboardStatsService = async (): Promise<DashboardStats> => {
-  // Get basic counts
-  const totalUsers = await User.countDocuments();
-  const totalStudents = await StudentModel.countDocuments({ status: "active" });
-  const totalTeachers = await TeacherModel.countDocuments();
-  const totalClasses = await ClassModel.countDocuments();
-  const activeAssignments = await AssignmentModel.countDocuments({ status: "active" });
+  const data = await dashboardRepository.getStats();
 
-  // Get recent registrations (last 30 days)
-  const thirtyDaysAgo = new Date();
-  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-  
-  const recentStudentRegistrations = await StudentModel.countDocuments({
-    registrationDate: { $gte: thirtyDaysAgo }
-  });
-  
-  const recentTeacherRegistrations = await TeacherModel.countDocuments({
-    createdAt: { $gte: thirtyDaysAgo }
-  });
-  
-  const recentRegistrations = recentStudentRegistrations + recentTeacherRegistrations;
-
-  // Get students by gender
-  const studentsByGender = await StudentModel.aggregate([
-    { $match: { status: "active" } },
-    { $group: { _id: "$gender", count: { $sum: 1 } } }
-  ]);
-  
   const genderStats = { male: 0, female: 0 };
-  studentsByGender.forEach(item => {
-    if (item._id) {
-      genderStats[item._id as keyof typeof genderStats] = item.count;
+  data.studentsByGender.forEach((item) => {
+    if (item.gender === "male" || item.gender === "female") {
+      genderStats[item.gender] = item._count._all;
     }
   });
 
-  // Get assignments by status
-  const assignmentsByStatus = await AssignmentModel.aggregate([
-    { $group: { _id: "$status", count: { $sum: 1 } } }
-  ]);
-  
   const assignmentStats = { active: 0, ended: 0, inactive: 0 };
-  assignmentsByStatus.forEach(item => {
-    if (item._id) {
-      assignmentStats[item._id as keyof typeof assignmentStats] = item.count;
+  data.assignmentsByStatus.forEach((item) => {
+    if (item.status === "active" || item.status === "ended" || item.status === "inactive") {
+      assignmentStats[item.status] = item._count._all;
     }
   });
 
-  // Get monthly registrations for the last 6 months
-  const sixMonthsAgo = new Date();
-  sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
-  
-  const monthlyStudentRegistrations = await StudentModel.aggregate([
-    { $match: { registrationDate: { $gte: sixMonthsAgo } } },
-    {
-      $group: {
-        _id: {
-          year: { $year: "$registrationDate" },
-          month: { $month: "$registrationDate" }
-        },
-        count: { $sum: 1 }
-      }
-    },
-    { $sort: { "_id.year": 1, "_id.month": 1 } }
-  ]);
-
-  const monthlyTeacherRegistrations = await TeacherModel.aggregate([
-    { $match: { createdAt: { $gte: sixMonthsAgo } } },
-    {
-      $group: {
-        _id: {
-          year: { $year: "$createdAt" },
-          month: { $month: "$createdAt" }
-        },
-        count: { $sum: 1 }
-      }
-    },
-    { $sort: { "_id.year": 1, "_id.month": 1 } }
-  ]);
-
-  // Combine monthly data
-  const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
   const monthlyRegistrations: { month: string; students: number; teachers: number }[] = [];
-  
-  // Create entries for the last 6 months
-  for (let i = 5; i >= 0; i--) {
+
+  for (let i = 5; i >= 0; i -= 1) {
     const date = new Date();
     date.setMonth(date.getMonth() - i);
     const year = date.getFullYear();
-    const month = date.getMonth();
-    
-    const studentData = monthlyStudentRegistrations.find(
-      item => item._id.year === year && item._id.month === month + 1
+    const month = date.getMonth() + 1;
+
+    const studentData = data.monthlyStudentRegistrations.find(
+      (item) => Number(item.year) === year && Number(item.month) === month
     );
-    
-    const teacherData = monthlyTeacherRegistrations.find(
-      item => item._id.year === year && item._id.month === month + 1
+    const teacherData = data.monthlyTeacherRegistrations.find(
+      (item) => Number(item.year) === year && Number(item.month) === month
     );
-    
+
     monthlyRegistrations.push({
-      month: monthNames[month],
-      students: studentData?.count || 0,
-      teachers: teacherData?.count || 0
+      month: monthNames[date.getMonth()],
+      students: Number(studentData?.count ?? 0),
+      teachers: Number(teacherData?.count ?? 0),
     });
   }
 
-  // Get class distribution (students per class)
-  const classDistribution = await StudentModel.aggregate([
-    { $match: { status: "active" } },
-    {
-      $group: {
-        _id: "$classId",
-        studentCount: { $sum: 1 }
-      }
-    },
-    {
-      $lookup: {
-        from: "classes",
-        localField: "_id",
-        foreignField: "_id",
-        as: "classInfo"
-      }
-    },
-    { $unwind: "$classInfo" },
-    {
-      $project: {
-        className: "$classInfo.name",
-        studentCount: 1
-      }
-    },
-    { $sort: { studentCount: -1 } },
-    { $limit: 10 }
-  ]);
+  const classNameById = new Map(data.classes.map((classItem) => [classItem.id, classItem.name]));
+
+  const classDistribution = data.classGroups
+    .map((group) => ({
+      className: classNameById.get(group.classId) ?? "Unknown",
+      studentCount: group._count._all,
+    }))
+    .sort((a, b) => b.studentCount - a.studentCount)
+    .slice(0, 10);
 
   return {
-    totalUsers,
-    totalStudents,
-    totalTeachers,
-    totalClasses,
-    activeAssignments,
-    recentRegistrations,
+    totalUsers: data.totalUsers,
+    totalStudents: data.totalStudents,
+    totalTeachers: data.totalTeachers,
+    totalClasses: data.totalClasses,
+    activeAssignments: data.activeAssignments,
+    recentRegistrations: data.recentRegistrations,
     studentsByGender: genderStats,
     assignmentsByStatus: assignmentStats,
     monthlyRegistrations,
-    classDistribution: classDistribution.map(item => ({
-      className: item.className,
-      studentCount: item.studentCount
-    }))
+    classDistribution,
   };
 };

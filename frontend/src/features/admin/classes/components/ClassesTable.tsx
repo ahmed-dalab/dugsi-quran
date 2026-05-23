@@ -1,4 +1,6 @@
 import type { ClassItem } from "../types/class.types";
+import { StatusBadge } from "@/components/ui/status-badge";
+import { panelClass, tableShellClass } from "@/design-system/nav";
 import DeleteClassDialog from "./DeleteClassDialog";
 import EditClassDialog from "./EditClassDialog";
 
@@ -11,7 +13,7 @@ export default function ClassesTable({ classes }: ClassesTableProps) {
     <div className="space-y-3">
       <div className="grid gap-3 md:hidden">
         {classes.map((classItem) => (
-          <div key={classItem._id} className="rounded-lg border bg-background p-4">
+          <div key={classItem._id} className={panelClass}>
             <div className="space-y-1">
               <p className="font-medium">{classItem.name}</p>
               <p className="text-sm text-muted-foreground">
@@ -23,15 +25,7 @@ export default function ClassesTable({ classes }: ClassesTableProps) {
             </div>
 
             <div className="mt-3 flex flex-wrap items-center gap-2">
-              <span
-                className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ${
-                  classItem.isActive
-                    ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
-                    : "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
-                }`}
-              >
-                {classItem.isActive ? "Active" : "Inactive"}
-              </span>
+              <StatusBadge preset={classItem.isActive ? "active" : "inactive"} />
             </div>
 
             <div className="mt-4 grid gap-2">
@@ -48,7 +42,7 @@ export default function ClassesTable({ classes }: ClassesTableProps) {
         ))}
       </div>
 
-      <div className="hidden rounded-lg border bg-white md:block">
+      <div className={tableShellClass}>
         <table className="w-full text-sm">
           <thead className="border-b bg-muted/50">
             <tr>
@@ -66,15 +60,7 @@ export default function ClassesTable({ classes }: ClassesTableProps) {
                 <td className="px-4 py-3">{classItem.levelOrder}</td>
                 <td className="px-4 py-3">${classItem.monthlyFee}</td>
                 <td className="px-4 py-3">
-                  <span
-                    className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ${
-                      classItem.isActive
-                        ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
-                        : "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
-                    }`}
-                  >
-                    {classItem.isActive ? "Active" : "Inactive"}
-                  </span>
+                  <StatusBadge preset={classItem.isActive ? "active" : "inactive"} />
                 </td>
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-2">

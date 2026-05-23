@@ -1,92 +1,67 @@
-import { isValidObjectId } from "mongoose";
 import type { Request } from "express";
-import { ClassModel, type IClass } from "./class.model";
-import {
-  buildSearchFilter,
-  getPaginateOptions,
-  parsePaginationQuery,
-  toPaginatedList,
-} from "../../utils/pagination";
+import { isValidId } from "../../utils/id";
+import { parsePaginationQuery } from "../../utils/pagination";
+import { serializeEntity, serializeList } from "../../utils/serialize";
+import type { IClass } from "./class.model";
+import { classRepository } from "./class.repository";
 
 type CreateClassPayload = IClass;
 type UpdateClassPayload = Partial<IClass>;
 
-const sanitizeClass = (classItem: unknown) => {
-  if (
-    typeof classItem === "object" &&
-    classItem !== null &&
-    "toObject" in classItem &&
-    typeof classItem.toObject === "function"
-  ) {
-    return classItem.toObject() as Record<string, unknown>;
-  }
-
-  return classItem as Record<string, unknown>;
-};
-
 export const createClassService = async (payload: CreateClassPayload) => {
-  const classItem = await ClassModel.create(payload);
-  return sanitizeClass(classItem);
+  const classItem = await classRepository.create(payload);
+  return serializeEntity(classItem);
 };
 
 export const getClassesService = async (query: Request["query"]) => {
   const pagination = parsePaginationQuery(query, { sortBy: "levelOrder", sortOrder: "asc" });
-  const filter: Record<string, unknown> = {
-    ...buildSearchFilter(pagination.search, ["name"]),
-  };
+  const filters: { isActive?: boolean } = {};
 
   if (query.isActive === "true") {
-    filter.isActive = true;
+    filters.isActive = true;
   } else if (query.isActive === "false") {
-    filter.isActive = false;
+    filters.isActive = false;
   }
 
-  const result = await ClassModel.paginate(filter, getPaginateOptions(pagination));
+  const result = await classRepository.findPaginated(pagination, filters);
 
-  return toPaginatedList(result, sanitizeClass);
+  return {
+    data: serializeList(result.docs),
+    pagination: result.pagination,
+  };
 };
 
 export const getClassByIdService = async (id: string) => {
-  if (!isValidObjectId(id)) {
+  if (!isValidId(id)) {
     return null;
   }
 
-  const classItem = await ClassModel.findById(id).lean();
-
-  if (!classItem) {
-    return null;
-  }
-
-  return sanitizeClass(classItem);
+  const classItem = await classRepository.findById(id);
+  return classItem ? serializeEntity(classItem) : null;
 };
 
 export const updateClassService = async (id: string, payload: UpdateClassPayload) => {
-  if (!isValidObjectId(id)) {
+  if (!isValidId(id)) {
     return null;
   }
 
-  const classItem = await ClassModel.findByIdAndUpdate(id, payload, {
-    new: true,
-    runValidators: true,
-  }).lean();
-
-  if (!classItem) {
+  try {
+    const classItem = await classRepository.update(id, payload);
+    return serializeEntity(classItem);
+  } catch {
     return null;
   }
-
-  return sanitizeClass(classItem);
 };
 
 export const deleteClassService = async (id: string) => {
-  if (!isValidObjectId(id)) {
+  if (!isValidId(id)) {
     return null;
   }
 
-  const classItem = await ClassModel.findByIdAndDelete(id).lean();
-
-  if (!classItem) {
+  try {
+    const classItem = await classRepository.delete(id);
+    return serializeEntity(classItem);
+  } catch {
     return null;
   }
-
-  return sanitizeClass(classItem);
 };

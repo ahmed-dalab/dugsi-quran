@@ -1,21 +1,13 @@
 import type { Request, Response } from "express";
-import { User, UserRole } from "../users/user.model";
 import bcrypt from "bcryptjs";
 import { hashToken, signAccessToken, signRefreshToken, verifyRefreshToken } from "../../utils/auth.token";
-import RefreshToken from "./refresh-token.model";
 import { clearRefreshTokenCookie, setRefreshTokenCookie } from "../../utils/auth.cookies";
 import { loginValidationSchema } from "./auth.validations";
 import { AppError } from "../../shared/errors/AppError";
 import { asyncHandler } from "../../utils/asyncHandler";
-
-interface IUser {
-  _id: string;
-  name: string;
-  email: string;
-  role: string;
-  password: string;
-  isActive: boolean;
-}
+import type { UserRole } from "../users/user.model";
+import { userRepository } from "../users/user.repository";
+import { authRepository } from "./auth.repository";
 
 export const login = asyncHandler(async (req: Request, res: Response) => {
   const result = loginValidationSchema.safeParse(req.body);
@@ -30,8 +22,7 @@ export const login = asyncHandler(async (req: Request, res: Response) => {
   }
 
   const { email, password } = req.body;
-
-  const user: IUser | null = await User.findOne({ email }).select("+password");
+  const user = await userRepository.findByEmailWithPassword(email);
 
   if (!user) {
     throw new AppError(401, "Invalid credentials");
@@ -42,12 +33,12 @@ export const login = asyncHandler(async (req: Request, res: Response) => {
     throw new AppError(401, "Invalid credentials");
   }
 
-  const accessToken = signAccessToken({ _id: user._id, role: user.role as UserRole });
-  const refreshToken = signRefreshToken({ _id: user._id });
+  const accessToken = signAccessToken({ _id: user.id, role: user.role as UserRole });
+  const refreshToken = signRefreshToken({ _id: user.id });
   const tokenHash = hashToken(refreshToken);
 
-  await RefreshToken.create({
-    userId: user._id,
+  await authRepository.createRefreshToken({
+    userId: user.id,
     tokenHash,
     expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
     userAgent: req.get("user-agent") || null,
@@ -60,7 +51,7 @@ export const login = asyncHandler(async (req: Request, res: Response) => {
     status: "success",
     accessToken,
     user: {
-      id: user._id,
+      id: user.id,
       name: user.name,
       email: user.email,
       role: user.role,
@@ -78,10 +69,7 @@ export const refreshToken = asyncHandler(async (req: Request, res: Response) => 
   const decoded = verifyRefreshToken(refreshTokenFromCookie);
   const oldTokenHash = hashToken(refreshTokenFromCookie);
 
-  const existingToken = await RefreshToken.findOne({
-    tokenHash: oldTokenHash,
-    revokedAt: null,
-  });
+  const existingToken = await authRepository.findActiveByTokenHash(oldTokenHash);
 
   if (!existingToken) {
     throw new AppError(401, "Refresh token not recognized");
@@ -91,21 +79,19 @@ export const refreshToken = asyncHandler(async (req: Request, res: Response) => 
     throw new AppError(401, "Refresh token expired");
   }
 
-  const user: IUser | null = await User.findById(decoded.sub);
+  const user = await userRepository.findById(decoded.sub as string);
   if (!user) {
     throw new AppError(404, "User not found");
   }
 
-  const newAccessToken = signAccessToken({ _id: user._id, role: user.role as UserRole });
-  const newRefreshToken = signRefreshToken(user);
+  const newAccessToken = signAccessToken({ _id: user.id, role: user.role as UserRole });
+  const newRefreshToken = signRefreshToken({ _id: user.id });
   const newTokenHash = hashToken(newRefreshToken);
 
-  existingToken.revokedAt = new Date();
-  existingToken.replacedByTokenHash = newTokenHash;
-  await existingToken.save();
+  await authRepository.revokeAndReplace(existingToken.id, newTokenHash);
 
-  await RefreshToken.create({
-    userId: user._id,
+  await authRepository.createRefreshToken({
+    userId: user.id,
     tokenHash: newTokenHash,
     expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
     userAgent: req.get("user-agent") || null,
@@ -118,7 +104,7 @@ export const refreshToken = asyncHandler(async (req: Request, res: Response) => 
     status: "success",
     accessToken: newAccessToken,
     user: {
-      id: user._id,
+      id: user.id,
       name: user.name,
       email: user.email,
       role: user.role,
@@ -131,11 +117,7 @@ export const logout = asyncHandler(async (req: Request, res: Response) => {
 
   if (refreshTokenFromCookie) {
     const tokenHash = hashToken(refreshTokenFromCookie);
-
-    await RefreshToken.findOneAndUpdate(
-      { tokenHash, revokedAt: null },
-      { revokedAt: new Date() }
-    );
+    await authRepository.revokeByTokenHash(tokenHash);
   }
 
   clearRefreshTokenCookie(res);

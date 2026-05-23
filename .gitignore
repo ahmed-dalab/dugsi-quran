@@ -6,6 +6,7 @@
 /backend/dist
 /backend/scripts
 /backend/logs
+/backend/generated/prisma
 
 
 # fronted build files

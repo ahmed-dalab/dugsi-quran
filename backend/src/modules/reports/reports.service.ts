@@ -1,9 +1,4 @@
-import { AssignmentModel } from "../assignments/assignment.model";
-import { AttendanceModel } from "../attendance/attendance.model";
-import { ClassModel } from "../classes/class.model";
-import { FeePaymentModel } from "../fees/fee.model";
-import { StudentModel } from "../students/student.model";
-import { TeacherModel } from "../teachers/teacher.model";
+import { reportsRepository } from "./reports.repository";
 
 const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
@@ -54,77 +49,28 @@ export const getReportsOverviewService = async (): Promise<ReportsOverview> => {
   const month = now.getMonth() + 1;
   const year = now.getFullYear();
 
-  const [
-    totalStudents,
-    activeStudents,
-    inactiveStudents,
-    totalTeachers,
-    totalClasses,
-    activeAssignments,
-  ] = await Promise.all([
-    StudentModel.countDocuments(),
-    StudentModel.countDocuments({ status: "active" }),
-    StudentModel.countDocuments({ status: "inactive" }),
-    TeacherModel.countDocuments(),
-    ClassModel.countDocuments(),
-    AssignmentModel.countDocuments({ status: "active" }),
-  ]);
-
-  const monthlyFeeTotals = await FeePaymentModel.aggregate([
-    { $match: { month, year } },
-    {
-      $group: {
-        _id: null,
-        totalDue: { $sum: "$amountDue" },
-        totalCollected: { $sum: "$amountPaid" },
-      },
-    },
-  ]);
-
-  const feeStatusCounts = await FeePaymentModel.aggregate([
-    { $match: { month, year } },
-    { $group: { _id: "$status", count: { $sum: 1 } } },
-  ]);
+  const data = await reportsRepository.getOverview(month, year);
 
   const feeByStatus = { paid: 0, partial: 0, unpaid: 0 };
-  feeStatusCounts.forEach((entry) => {
-    if (entry._id && entry._id in feeByStatus) {
-      feeByStatus[entry._id as keyof typeof feeByStatus] = entry.count as number;
+  data.feeStatusCounts.forEach((entry) => {
+    if (entry.status in feeByStatus) {
+      feeByStatus[entry.status as keyof typeof feeByStatus] = entry._count._all;
     }
   });
 
-  const monthlyTotals = monthlyFeeTotals[0] ?? { totalDue: 0, totalCollected: 0 };
-  const outstanding = Math.max(0, Number(monthlyTotals.totalDue) - Number(monthlyTotals.totalCollected));
-  const collectionRate = Number(monthlyTotals.totalDue)
-    ? roundToTwo((Number(monthlyTotals.totalCollected) / Number(monthlyTotals.totalDue)) * 100)
-    : 0;
+  const totalDue = Number(data.monthlyFeeTotals._sum.amountDue ?? 0);
+  const totalCollected = Number(data.monthlyFeeTotals._sum.amountPaid ?? 0);
+  const outstanding = Math.max(0, totalDue - totalCollected);
+  const collectionRate = totalDue ? roundToTwo((totalCollected / totalDue) * 100) : 0;
 
-  const thirtyDaysAgo = new Date();
-  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-  const thirtyDaysAgoIso = thirtyDaysAgo.toISOString().slice(0, 10);
-
-  const attendanceAggregation = await AttendanceModel.aggregate([
-    { $match: { date: { $gte: thirtyDaysAgoIso } } },
-    {
-      $facet: {
-        sessions: [{ $count: "total" }],
-        statuses: [
-          { $unwind: "$records" },
-          { $group: { _id: "$records.status", count: { $sum: 1 } } },
-        ],
-      },
-    },
-  ]);
-
-  const attendanceData = attendanceAggregation[0] ?? { sessions: [], statuses: [] };
-  const sessionsLast30Days = Number(attendanceData.sessions?.[0]?.total ?? 0);
-
-  const attendanceCounts = { present: 0, absent: 0, late: 0, excused: 0 };
-  (attendanceData.statuses ?? []).forEach((entry: { _id?: string; count: number }) => {
-    if (entry._id && entry._id in attendanceCounts) {
-      attendanceCounts[entry._id as keyof typeof attendanceCounts] = entry.count;
-    }
-  });
+  const attendanceRow = data.attendanceStats[0];
+  const sessionsLast30Days = Number(attendanceRow?.sessions ?? 0);
+  const attendanceCounts = {
+    present: Number(attendanceRow?.present ?? 0),
+    absent: Number(attendanceRow?.absent ?? 0),
+    late: Number(attendanceRow?.late ?? 0),
+    excused: Number(attendanceRow?.excused ?? 0),
+  };
 
   const attendanceTotalRecords =
     attendanceCounts.present +
@@ -136,78 +82,45 @@ export const getReportsOverviewService = async (): Promise<ReportsOverview> => {
     ? roundToTwo(((attendanceCounts.present + attendanceCounts.late) / attendanceTotalRecords) * 100)
     : 0;
 
-  const sixMonthsCollectionsAgg = await FeePaymentModel.aggregate([
-    {
-      $match: {
-        year: { $gte: year - 1 },
-      },
-    },
-    {
-      $group: {
-        _id: { year: "$year", month: "$month" },
-        amount: { $sum: "$amountPaid" },
-      },
-    },
-    { $sort: { "_id.year": 1, "_id.month": 1 } },
-  ]);
-
   const monthlyCollections: { month: string; amount: number }[] = [];
   for (let i = 5; i >= 0; i -= 1) {
     const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
     const targetYear = date.getFullYear();
     const targetMonth = date.getMonth() + 1;
 
-    const found = sixMonthsCollectionsAgg.find(
-      (entry) => entry._id.year === targetYear && entry._id.month === targetMonth
+    const found = data.sixMonthsCollections.find(
+      (entry) => entry.year === targetYear && entry.month === targetMonth
     );
 
     monthlyCollections.push({
       month: `${monthNames[targetMonth - 1]} ${String(targetYear).slice(-2)}`,
-      amount: Number(found?.amount ?? 0),
+      amount: Number(found?._sum.amountPaid ?? 0),
     });
   }
 
-  const classStudentBreakdownAgg = await StudentModel.aggregate([
-    { $match: { status: "active" } },
-    {
-      $group: {
-        _id: "$classId",
-        studentCount: { $sum: 1 },
-      },
-    },
-    {
-      $lookup: {
-        from: "classes",
-        localField: "_id",
-        foreignField: "_id",
-        as: "classInfo",
-      },
-    },
-    { $unwind: "$classInfo" },
-    {
-      $project: {
-        _id: 0,
-        className: "$classInfo.name",
-        studentCount: 1,
-      },
-    },
-    { $sort: { studentCount: -1, className: 1 } },
-  ]);
+  const classNameById = new Map(data.classes.map((classItem) => [classItem.id, classItem.name]));
+
+  const classStudentBreakdown = data.classGroups
+    .map((group) => ({
+      className: classNameById.get(group.classId) ?? "Unknown",
+      studentCount: group._count._all,
+    }))
+    .sort((a, b) => b.studentCount - a.studentCount || a.className.localeCompare(b.className));
 
   return {
     generatedAt: new Date().toISOString(),
     summary: {
-      totalStudents,
-      activeStudents,
-      inactiveStudents,
-      totalTeachers,
-      totalClasses,
-      activeAssignments,
+      totalStudents: data.totalStudents,
+      activeStudents: data.activeStudents,
+      inactiveStudents: data.inactiveStudents,
+      totalTeachers: data.totalTeachers,
+      totalClasses: data.totalClasses,
+      activeAssignments: data.activeAssignments,
     },
     fees: {
       month: `${monthNames[month - 1]} ${year}`,
-      totalDue: Number(monthlyTotals.totalDue ?? 0),
-      totalCollected: Number(monthlyTotals.totalCollected ?? 0),
+      totalDue,
+      totalCollected,
       outstanding,
       collectionRate,
       byStatus: feeByStatus,
@@ -221,9 +134,6 @@ export const getReportsOverviewService = async (): Promise<ReportsOverview> => {
       attendanceRate,
     },
     monthlyCollections,
-    classStudentBreakdown: classStudentBreakdownAgg.map((entry) => ({
-      className: String(entry.className),
-      studentCount: Number(entry.studentCount),
-    })),
+    classStudentBreakdown,
   };
 };

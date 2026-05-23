@@ -1,5 +1,5 @@
 import jwt from "jsonwebtoken";
-import mongoose from "mongoose";
+import { Prisma } from "../../../generated/prisma";
 import { AppError } from "./AppError";
 
 export function normalizeError(error: unknown): AppError {
@@ -7,26 +7,22 @@ export function normalizeError(error: unknown): AppError {
     return error;
   }
 
-  if (error instanceof mongoose.Error.ValidationError) {
-    const errors = Object.values(error.errors).map((issue) => ({
-      field: issue.path,
-      message: issue.message,
-    }));
-
-    return new AppError(400, "Validation failed", { errors });
+  if (error instanceof Prisma.PrismaClientValidationError) {
+    return new AppError(400, "Invalid data provided");
   }
 
-  if (error instanceof mongoose.Error.CastError) {
-    return new AppError(400, "Invalid resource id");
-  }
+  if (error instanceof Prisma.PrismaClientKnownRequestError) {
+    if (error.code === "P2002") {
+      return new AppError(409, "Duplicate value already exists");
+    }
 
-  if (
-    typeof error === "object" &&
-    error !== null &&
-    "code" in error &&
-    error.code === 11000
-  ) {
-    return new AppError(409, "Duplicate value already exists");
+    if (error.code === "P2025") {
+      return new AppError(404, "Resource not found");
+    }
+
+    if (error.code === "P2003") {
+      return new AppError(400, "Invalid reference to related resource");
+    }
   }
 
   if (error instanceof jwt.JsonWebTokenError || error instanceof jwt.TokenExpiredError) {

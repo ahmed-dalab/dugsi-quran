@@ -106,7 +106,7 @@ export default function Settings() {
         </p>
       </div>
 
-      <Card className="bg-white">
+      <Card>
         <CardHeader>
           <CardTitle>School Settings</CardTitle>
           <CardDescription>

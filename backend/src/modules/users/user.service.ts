@@ -1,133 +1,99 @@
-import { isValidObjectId } from "mongoose";
 import type { Request } from "express";
-import { IUser, User } from "./user.model";
 import bcrypt from "bcryptjs";
 import { env } from "../../config/env";
-import {
-  buildSearchFilter,
-  getPaginateOptions,
-  getQueryString,
-  parsePaginationQuery,
-  toPaginatedList,
-} from "../../utils/pagination";
+import { isValidId } from "../../utils/id";
+import { getQueryString, parsePaginationQuery } from "../../utils/pagination";
+import { serializeEntity, serializeList } from "../../utils/serialize";
+import type { IUser } from "./user.model";
+import { userRepository } from "./user.repository";
+
 type CreateUserPayload = IUser;
 type UpdateUserPayload = Partial<IUser>;
 
 const sanitizeUser = (user: unknown) => {
-  const userObject =
-    typeof user === "object" &&
-    user !== null &&
-    "toObject" in user &&
-    typeof user.toObject === "function"
-      ? (user.toObject() as Record<string, unknown>)
-      : (user as Record<string, unknown>);
-  const { password, ...safeUser } = userObject;
+  if (!user || typeof user !== "object") {
+    return user;
+  }
 
-  return safeUser;
+  const { password, ...safeUser } = user as Record<string, unknown>;
+  return serializeEntity(safeUser);
 };
 
 export const createUserService = async (payload: CreateUserPayload) => {
   const hashedPassword = await bcrypt.hash(payload.password, env.HASH_SALT_ROUNDS);
-  const user = await User.create({ ...payload, password: hashedPassword });
-
+  const user = await userRepository.create({ ...payload, password: hashedPassword });
   return sanitizeUser(user);
 };
 
-const buildUserListFilter = (query: Request["query"]) => {
+const buildUserListFilters = (query: Request["query"]) => {
   const pagination = parsePaginationQuery(query, { sortBy: "createdAt", sortOrder: "desc" });
-  const filter: Record<string, unknown> = {
-    ...buildSearchFilter(pagination.search, ["name", "email"]),
-  };
-
   const role = getQueryString(query, "role");
+  const filters: { role?: "admin" | "teacher"; isActive?: boolean } = {};
+
   if (role === "admin" || role === "teacher") {
-    filter.role = role;
+    filters.role = role;
   }
 
   if (query.isActive === "true") {
-    filter.isActive = true;
+    filters.isActive = true;
   } else if (query.isActive === "false") {
-    filter.isActive = false;
+    filters.isActive = false;
   }
 
-  return { pagination, filter };
+  return { pagination, filters };
 };
 
 export const getUsersService = async (query: Request["query"]) => {
-  const { pagination, filter } = buildUserListFilter(query);
-  const result = await User.paginate(filter, getPaginateOptions(pagination, { select: "-password" }));
+  const { pagination, filters } = buildUserListFilters(query);
+  const result = await userRepository.findPaginated(pagination, filters);
 
-  return toPaginatedList(result, sanitizeUser);
+  return {
+    data: serializeList(result.docs).map(sanitizeUser),
+    pagination: result.pagination,
+  };
 };
 
 export const getUserByIdService = async (id: string) => {
-  if (!isValidObjectId(id)) {
+  if (!isValidId(id)) {
     return null;
   }
 
-  const user = await User.findById(id).lean();
-
-  if (!user) {
-    return null;
-  }
-
-  return sanitizeUser(user);
+  const user = await userRepository.findById(id);
+  return user ? sanitizeUser(user) : null;
 };
 
 export const updateUserService = async (id: string, payload: UpdateUserPayload) => {
-  if (!isValidObjectId(id)) {
+  if (!isValidId(id)) {
     return null;
   }
 
-  const user = await User.findByIdAndUpdate(id, payload, {
-    new: true,
-    runValidators: true,
-  }).lean();
-
-  if (!user) {
-    return null;
-  }
-
+  const user = await userRepository.update(id, payload);
   return sanitizeUser(user);
 };
 
 export const deleteUserService = async (id: string) => {
-  if (!isValidObjectId(id)) {
+  if (!isValidId(id)) {
     return null;
   }
 
-  const user = await User.findByIdAndDelete(id).lean();
-
-  if (!user) {
+  try {
+    const user = await userRepository.delete(id);
+    return sanitizeUser(user);
+  } catch {
     return null;
   }
-
-  return sanitizeUser(user);
 };
 
 export const toggleUserStatusService = async (id: string) => {
-  if (!isValidObjectId(id)) {
+  if (!isValidId(id)) {
     return null;
   }
 
-  const existingUser = await User.findById(id).lean();
-
+  const existingUser = await userRepository.findById(id);
   if (!existingUser) {
     return null;
   }
 
-  const user = await User.findByIdAndUpdate(
-    id,
-    { isActive: !existingUser.isActive },
-    {
-      new: true,
-      runValidators: true,
-    }
-  ).lean();
-
-  if (!user) {
-    return null;
-  }
-
+  const user = await userRepository.update(id, { isActive: !existingUser.isActive });
   return sanitizeUser(user);
 };

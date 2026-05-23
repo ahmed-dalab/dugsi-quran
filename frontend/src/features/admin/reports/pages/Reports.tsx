@@ -48,7 +48,7 @@ export default function Reports() {
       </div>
 
       <section className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-        <article className="rounded-lg border bg-white p-4">
+        <article className="rounded-lg border bg-card p-4">
           <p className="text-xs text-muted-foreground">Total Students</p>
           <p className="mt-1 text-2xl font-semibold">{formatNumber(report.summary.totalStudents)}</p>
           <p className="mt-1 text-xs text-muted-foreground">
@@ -56,7 +56,7 @@ export default function Reports() {
           </p>
         </article>
 
-        <article className="rounded-lg border bg-white p-4">
+        <article className="rounded-lg border bg-card p-4">
           <p className="text-xs text-muted-foreground">Teachers & Classes</p>
           <p className="mt-1 text-2xl font-semibold">{formatNumber(report.summary.totalTeachers)} Teachers</p>
           <p className="mt-1 text-xs text-muted-foreground">
@@ -64,7 +64,7 @@ export default function Reports() {
           </p>
         </article>
 
-        <article className="rounded-lg border bg-white p-4">
+        <article className="rounded-lg border bg-card p-4">
           <p className="text-xs text-muted-foreground">Attendance (Last 30 Days)</p>
           <p className="mt-1 text-2xl font-semibold">{report.attendance.attendanceRate}%</p>
           <p className="mt-1 text-xs text-muted-foreground">
@@ -74,26 +74,26 @@ export default function Reports() {
       </section>
 
       <section className="grid grid-cols-1 gap-4 xl:grid-cols-2">
-        <article className="rounded-lg border bg-white p-4 space-y-4">
+        <article className="rounded-lg border bg-card p-4 space-y-4">
           <div>
             <h2 className="text-lg font-semibold">Fees Report ({report.fees.month})</h2>
             <p className="text-sm text-muted-foreground">Collection and outstanding summary.</p>
           </div>
 
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <div className="rounded-md bg-slate-50 p-3">
+            <div className="rounded-md bg-muted p-3">
               <p className="text-xs text-muted-foreground">Total Due</p>
               <p className="text-lg font-semibold">{formatCurrency(report.fees.totalDue)}</p>
             </div>
-            <div className="rounded-md bg-slate-50 p-3">
+            <div className="rounded-md bg-muted p-3">
               <p className="text-xs text-muted-foreground">Collected</p>
               <p className="text-lg font-semibold">{formatCurrency(report.fees.totalCollected)}</p>
             </div>
-            <div className="rounded-md bg-slate-50 p-3">
+            <div className="rounded-md bg-muted p-3">
               <p className="text-xs text-muted-foreground">Outstanding</p>
               <p className="text-lg font-semibold">{formatCurrency(report.fees.outstanding)}</p>
             </div>
-            <div className="rounded-md bg-slate-50 p-3">
+            <div className="rounded-md bg-muted p-3">
               <p className="text-xs text-muted-foreground">Collection Rate</p>
               <p className="text-lg font-semibold">{report.fees.collectionRate}%</p>
             </div>
@@ -125,7 +125,7 @@ export default function Reports() {
           </div>
         </article>
 
-        <article className="rounded-lg border bg-white p-4 space-y-4">
+        <article className="rounded-lg border bg-card p-4 space-y-4">
           <div>
             <h2 className="text-lg font-semibold">Monthly Collections</h2>
             <p className="text-sm text-muted-foreground">Amount paid in the last six months.</p>
@@ -141,9 +141,9 @@ export default function Reports() {
                     <span className="font-medium">{item.month}</span>
                     <span>{formatCurrency(item.amount)}</span>
                   </div>
-                  <div className="h-2 overflow-hidden rounded-full bg-slate-100">
+                  <div className="h-2 overflow-hidden rounded-full bg-muted">
                     <div
-                      className="h-full rounded-full bg-blue-600"
+                      className="h-full rounded-full bg-primary"
                       style={{ width: `${width}%` }}
                     />
                   </div>
@@ -154,7 +154,7 @@ export default function Reports() {
         </article>
       </section>
 
-      <section className="rounded-lg border bg-white p-4 space-y-4">
+      <section className="rounded-lg border bg-card p-4 space-y-4">
         <div>
           <h2 className="text-lg font-semibold">Class Student Breakdown</h2>
           <p className="text-sm text-muted-foreground">Active student count by class.</p>

@@ -1,4 +1,3 @@
-import type { PaginateOptions, PaginateResult } from "mongoose";
 import type { Request } from "express";
 
 export const DEFAULT_PAGE = 1;
@@ -46,61 +45,6 @@ export function parsePaginationQuery(
 
 export function escapeRegex(value: string) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
-
-export function buildSearchFilter(search: string | undefined, fields: string[]) {
-  if (!search || fields.length === 0) {
-    return {};
-  }
-
-  const regex = new RegExp(escapeRegex(search), "i");
-
-  return {
-    $or: fields.map((field) => ({ [field]: regex })),
-  };
-}
-
-export function buildSortOption(sortBy: string | undefined, sortOrder: "asc" | "desc", fallback = "createdAt") {
-  const field = sortBy || fallback;
-  return { [field]: sortOrder === "asc" ? 1 : -1 } as Record<string, 1 | -1>;
-}
-
-export function getPaginateOptions(
-  pagination: PaginationQuery,
-  options: Partial<PaginateOptions> = {}
-): PaginateOptions {
-  const { sort: customSort, ...rest } = options;
-
-  return {
-    page: pagination.page,
-    limit: pagination.limit,
-    sort: customSort ?? buildSortOption(pagination.sortBy, pagination.sortOrder),
-    lean: true,
-    ...rest,
-  };
-}
-
-export function formatPaginationMeta<T>(result: PaginateResult<T>): PaginationMeta {
-  return {
-    totalDocs: result.totalDocs,
-    limit: result.limit,
-    page: result.page ?? 1,
-    totalPages: result.totalPages,
-    hasNextPage: result.hasNextPage,
-    hasPrevPage: result.hasPrevPage,
-    nextPage: result.nextPage ?? null,
-    prevPage: result.prevPage ?? null,
-  };
-}
-
-export function toPaginatedList<T>(
-  result: PaginateResult<T>,
-  mapDoc: (doc: T) => unknown
-): PaginatedListResult<unknown> {
-  return {
-    data: result.docs.map(mapDoc),
-    pagination: formatPaginationMeta(result),
-  };
 }
 
 export function getQueryString(query: Request["query"], key: string) {

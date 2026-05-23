@@ -1,4 +1,6 @@
 import type { Student } from "../types/student.types";
+import { StatusBadge } from "@/components/ui/status-badge";
+import { panelClass, tableShellClass } from "@/design-system/nav";
 import DeleteStudentDialog from "./DeleteStudentDialog";
 import EditStudentDialog from "./EditStudentDialog";
 
@@ -14,7 +16,7 @@ export default function StudentsTable({ students }: StudentsTableProps) {
     <div className="space-y-3">
       <div className="grid gap-3 md:hidden">
         {students.map((student) => (
-          <div key={student._id} className="rounded-lg border bg-background p-4">
+          <div key={student._id} className={panelClass}>
             <div className="space-y-1">
               <p className="font-medium">{student.fullName}</p>
               <p className="text-sm text-muted-foreground">{student.guardianPhone}</p>
@@ -24,18 +26,8 @@ export default function StudentsTable({ students }: StudentsTableProps) {
             </div>
 
             <div className="mt-3 flex flex-wrap items-center gap-2">
-              <span className="inline-flex rounded-md bg-primary/10 px-2 py-1 text-xs font-medium text-primary">
-                {student.gender}
-              </span>
-              <span
-                className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ${
-                  student.status === "active"
-                    ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
-                    : "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
-                }`}
-              >
-                {student.status}
-              </span>
+              <StatusBadge preset={student.gender} />
+              <StatusBadge preset={student.status === "active" ? "active" : "inactive"} />
             </div>
 
             <div className="mt-4 grid gap-2">
@@ -46,7 +38,7 @@ export default function StudentsTable({ students }: StudentsTableProps) {
         ))}
       </div>
 
-      <div className="hidden rounded-lg border bg-white md:block">
+      <div className={tableShellClass}>
         <table className="w-full text-sm">
           <thead className="border-b bg-muted/50">
             <tr>
@@ -66,15 +58,7 @@ export default function StudentsTable({ students }: StudentsTableProps) {
                 <td className="px-4 py-3 capitalize">{student.gender}</td>
                 <td className="px-4 py-3">{student.guardianPhone}</td>
                 <td className="px-4 py-3">
-                  <span
-                    className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ${
-                      student.status === "active"
-                        ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
-                        : "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
-                    }`}
-                  >
-                    {student.status}
-                  </span>
+                  <StatusBadge preset={student.status === "active" ? "active" : "inactive"} />
                 </td>
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-2">

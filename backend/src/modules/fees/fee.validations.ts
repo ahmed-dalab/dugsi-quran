@@ -1,10 +1,9 @@
 import { z } from "zod";
-
-const objectIdSchema = z.string().regex(/^[a-f\d]{24}$/i, "Invalid id format");
+import { uuidSchema } from "../../utils/id";
 
 export const feeParamsSchema = z.object({
   params: z.object({
-    id: objectIdSchema,
+    id: uuidSchema,
   }),
   body: z.object({}).optional(),
   query: z.object({}).optional(),
@@ -12,8 +11,8 @@ export const feeParamsSchema = z.object({
 
 export const createFeeSchema = z.object({
   body: z.object({
-    studentId: objectIdSchema,
-    classId: objectIdSchema,
+    studentId: uuidSchema,
+    classId: uuidSchema,
     month: z.number().int().min(1).max(12),
     year: z.number().int().min(2000),
     amountDue: z.number().min(0),
@@ -39,7 +38,7 @@ export const updateFeeSchema = z.object({
       message: "At least one field is required",
     }),
   params: z.object({
-    id: objectIdSchema,
+    id: uuidSchema,
   }),
   query: z.object({}).optional(),
 });

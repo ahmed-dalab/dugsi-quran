@@ -27,7 +27,7 @@ export default function AdminLayout() {
 
       <div className="flex-1 flex min-w-0 flex-col">
         <Topbar onOpenMenu={() => setIsMobileMenuOpen(true)} />
-        <main className="flex-1 bg-slate-100 p-4 pt-24 md:p-6 md:pt-24">
+        <main className="flex-1 bg-surface p-4 pt-24 md:p-6 md:pt-24">
           <Outlet />
         </main>
       </div>

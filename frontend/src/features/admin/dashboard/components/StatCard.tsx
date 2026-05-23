@@ -26,7 +26,7 @@ export default function StatCard({ title, value, icon: Icon, description, trend 
             <div className="flex items-center mt-2">
               <span
                 className={`text-xs font-medium ${
-                  trend.isPositive ? "text-green-600" : "text-red-600"
+                  trend.isPositive ? "text-success" : "text-destructive"
                 }`}
               >
                 {trend.isPositive ? "+" : "-"}{trend.value}

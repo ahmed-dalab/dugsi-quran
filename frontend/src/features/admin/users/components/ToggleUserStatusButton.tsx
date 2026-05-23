@@ -6,6 +6,7 @@ import { useToggleUserStatusMutation } from "../api/userApi";
 import type { User } from "../types/user.types";
 
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 interface ToggleUserStatusButtonProps {
   user: User;
@@ -32,11 +33,11 @@ export default function ToggleUserStatusButton({ user, className }: ToggleUserSt
       size="sm"
       onClick={handleToggle}
       disabled={isLoading}
-      className={`gap-2 ${
-        user.isActive 
-          ? "text-yellow-600 hover:text-yellow-700 hover:bg-yellow-50" 
-          : "text-green-600 hover:text-green-700 hover:bg-green-50"
-      } ${className ?? ""}`}
+      className={cn(
+        "gap-2",
+        user.isActive ? "text-warning hover:text-warning" : "text-success hover:text-success",
+        className
+      )}
     >
       {user.isActive ? (
         <>

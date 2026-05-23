@@ -1,17 +1,12 @@
-import { isValidObjectId } from "mongoose";
-import { AppError } from "../../shared/errors/AppError";
 import type { Request } from "express";
-import { AttendanceModel, type AttendanceStatus } from "./attendance.model";
-import { ClassModel } from "../classes/class.model";
-import { StudentModel } from "../students/student.model";
-import {
-  buildSearchFilter,
-  emptyPaginatedList,
-  getPaginateOptions,
-  getQueryString,
-  parsePaginationQuery,
-  toPaginatedList,
-} from "../../utils/pagination";
+import { AppError } from "../../shared/errors/AppError";
+import { isValidId } from "../../utils/id";
+import { emptyPaginatedList, getQueryString, parsePaginationQuery } from "../../utils/pagination";
+import { mapAttendanceRecord } from "../../utils/mappers";
+import { classRepository } from "../classes/class.repository";
+import { studentRepository } from "../students/student.repository";
+import type { AttendanceStatus } from "./attendance.model";
+import { attendanceRepository } from "./attendance.repository";
 
 export interface AttendanceInputRecord {
   studentId: string;
@@ -26,25 +21,12 @@ export interface TakeAttendancePayload {
   takenBy: string;
 }
 
-const sanitizeAttendance = (attendance: unknown) => {
-  if (
-    typeof attendance === "object" &&
-    attendance !== null &&
-    "toObject" in attendance &&
-    typeof attendance.toObject === "function"
-  ) {
-    return attendance.toObject() as Record<string, unknown>;
-  }
-
-  return attendance as Record<string, unknown>;
-};
-
 const isValidDateString = (value: string) => /^\d{4}-\d{2}-\d{2}$/.test(value);
 
 export const takeAttendanceService = async (payload: TakeAttendancePayload) => {
   const { classId, date, records, takenBy } = payload;
 
-  if (!isValidObjectId(classId)) {
+  if (!isValidId(classId)) {
     throw new AppError(400, "Invalid class id");
   }
 
@@ -52,19 +34,13 @@ export const takeAttendanceService = async (payload: TakeAttendancePayload) => {
     throw new AppError(400, "Date must be in YYYY-MM-DD format");
   }
 
-  const classItem = await ClassModel.findById(classId).lean();
+  const classItem = await classRepository.findById(classId);
   if (!classItem) {
     throw new AppError(404, "Class not found");
   }
 
-  const activeStudents = await StudentModel.find({
-    classId,
-    status: "active",
-  })
-    .select("_id")
-    .lean();
-
-  const activeStudentIds = new Set(activeStudents.map((s) => s._id.toString()));
+  const activeStudents = await studentRepository.findActiveIdsByClass(classId);
+  const activeStudentIds = new Set(activeStudents.map((student) => student.id));
 
   if (records.length === 0) {
     throw new AppError(400, "Attendance records are required");
@@ -72,7 +48,7 @@ export const takeAttendanceService = async (payload: TakeAttendancePayload) => {
 
   const uniqueStudents = new Set<string>();
   for (const record of records) {
-    if (!isValidObjectId(record.studentId)) {
+    if (!isValidId(record.studentId)) {
       throw new AppError(400, `Invalid student id: ${record.studentId}`);
     }
 
@@ -87,87 +63,43 @@ export const takeAttendanceService = async (payload: TakeAttendancePayload) => {
     uniqueStudents.add(record.studentId);
   }
 
-  const normalizedRecords = records.map((record) => ({
-    studentId: record.studentId,
-    status: record.status,
-    note: record.note?.trim() || undefined,
-  }));
+  const attendance = await attendanceRepository.upsertWithRecords({
+    classId,
+    date,
+    takenById: takenBy,
+    records: records.map((record) => ({
+      studentId: record.studentId,
+      status: record.status,
+      note: record.note?.trim() || undefined,
+    })),
+  });
 
-  const attendance = await AttendanceModel.findOneAndUpdate(
-    { classId, date },
-    {
-      classId,
-      date,
-      records: normalizedRecords,
-      takenBy,
-    },
-    {
-      new: true,
-      upsert: true,
-      runValidators: true,
-      setDefaultsOnInsert: true,
-    }
-  )
-    .populate("classId", "_id name levelOrder")
-    .populate("takenBy", "_id name email")
-    .populate("records.studentId", "_id fullName classId")
-    .lean();
-
-  return sanitizeAttendance(attendance);
+  return attendance ? mapAttendanceRecord(attendance) : null;
 };
 
 export const getAttendanceByClassAndDateService = async (classId: string, date: string) => {
-  if (!isValidObjectId(classId)) {
+  if (!isValidId(classId) || !isValidDateString(date)) {
     return null;
   }
 
-  if (!isValidDateString(date)) {
-    return null;
-  }
-
-  const attendance = await AttendanceModel.findOne({ classId, date })
-    .populate("classId", "_id name levelOrder")
-    .populate("takenBy", "_id name email")
-    .populate("records.studentId", "_id fullName classId")
-    .lean();
-
-  if (!attendance) {
-    return null;
-  }
-
-  return sanitizeAttendance(attendance);
+  const attendance = await attendanceRepository.findByClassAndDate(classId, date);
+  return attendance ? mapAttendanceRecord(attendance) : null;
 };
 
 export const getAttendanceHistoryByClassService = async (classId: string, query: Request["query"]) => {
-  if (!isValidObjectId(classId)) {
+  if (!isValidId(classId)) {
     return emptyPaginatedList();
   }
 
   const pagination = parsePaginationQuery(query, { sortBy: "date", sortOrder: "desc" });
-  const filter: Record<string, unknown> = {
-    classId,
-    ...buildSearchFilter(pagination.search, ["date"]),
+
+  const result = await attendanceRepository.findHistoryByClass(classId, pagination, {
+    fromDate: getQueryString(query, "fromDate"),
+    toDate: getQueryString(query, "toDate"),
+  });
+
+  return {
+    data: result.docs.map(mapAttendanceRecord),
+    pagination: result.pagination,
   };
-
-  const fromDate = getQueryString(query, "fromDate");
-  const toDate = getQueryString(query, "toDate");
-  if (fromDate || toDate) {
-    filter.date = {};
-    if (fromDate) {
-      (filter.date as Record<string, string>).$gte = fromDate;
-    }
-    if (toDate) {
-      (filter.date as Record<string, string>).$lte = toDate;
-    }
-  }
-
-  const result = await AttendanceModel.paginate(
-    filter,
-    getPaginateOptions(pagination, {
-      sort: { date: -1 },
-      populate: { path: "takenBy", select: "_id name email" },
-    })
-  );
-
-  return toPaginatedList(result, sanitizeAttendance);
 };

@@ -24,13 +24,7 @@ import {
   FieldGroup,
   FieldLabel,
 } from "@/components/ui/field";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { AppSelect } from "@/components/ui/select";
 import { useCreateAssignmentMutation } from "../api/assignmentApi";
 import { z } from "zod";
 
@@ -119,18 +113,18 @@ export default function AssignClassDialog({
               render={({ field, fieldState }) => (
                 <Field data-invalid={fieldState.invalid}>
                   <FieldLabel>Teacher *</FieldLabel>
-                  <Select value={field.value} onValueChange={field.onChange}>
-                    <SelectTrigger aria-invalid={fieldState.invalid}>
-                      <SelectValue placeholder="Select teacher" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {teachersData?.data.map((teacher) => (
-                        <SelectItem key={teacher._id} value={teacher._id}>
-                          {getTeacherName(teacher)}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <AppSelect
+                    value={field.value}
+                    onChange={field.onChange}
+                    invalid={fieldState.invalid}
+                    placeholder="Search and select teacher"
+                    options={
+                      teachersData?.data.map((teacher) => ({
+                        value: teacher._id,
+                        label: getTeacherName(teacher),
+                      })) ?? []
+                    }
+                  />
                   {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
                 </Field>
               )}
@@ -142,18 +136,18 @@ export default function AssignClassDialog({
               render={({ field, fieldState }) => (
                 <Field data-invalid={fieldState.invalid}>
                   <FieldLabel>Class *</FieldLabel>
-                  <Select value={field.value} onValueChange={field.onChange}>
-                    <SelectTrigger aria-invalid={fieldState.invalid}>
-                      <SelectValue placeholder="Select class" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {classesData?.data.map((classItem) => (
-                        <SelectItem key={classItem._id} value={classItem._id}>
-                          {classItem.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <AppSelect
+                    value={field.value}
+                    onChange={field.onChange}
+                    invalid={fieldState.invalid}
+                    placeholder="Search and select class"
+                    options={
+                      classesData?.data.map((classItem) => ({
+                        value: classItem._id,
+                        label: classItem.name,
+                      })) ?? []
+                    }
+                  />
                   {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
                 </Field>
               )}

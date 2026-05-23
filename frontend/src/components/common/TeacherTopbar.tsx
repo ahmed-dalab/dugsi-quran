@@ -5,11 +5,11 @@ import { useAppDispatch, useAppSelector } from "@/app/hooks";
 import { clearAuth } from "@/features/auth/authSlice";
 import { useLogoutMutation } from "@/features/auth/authApi";
 import { Button } from "@/components/ui/button";
+import { topbarClass } from "@/design-system/nav";
 
 const pageNames: Record<string, string> = {
   "/teacher": "Dashboard",
   "/teacher/settings": "Settings",
-
 };
 
 interface TeacherTopbarProps {
@@ -38,7 +38,7 @@ export default function TeacherTopbar({ onOpenMenu }: TeacherTopbarProps) {
   }
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-40 border-b border-slate-200 bg-slate-100 px-4 py-3 md:left-64 md:px-6">
+    <header className={topbarClass}>
       <div className="flex items-center justify-between gap-4">
         <div className="flex items-center gap-4">
           <Button
@@ -49,37 +49,28 @@ export default function TeacherTopbar({ onOpenMenu }: TeacherTopbarProps) {
             className="md:hidden"
             aria-label="Open menu"
           >
-            <Menu className="h-5 w-5 text-slate-700" />
+            <Menu className="h-5 w-5 text-muted-foreground" />
           </Button>
-          <ShieldCheck className="h-6 w-6 text-slate-700" />
+          <ShieldCheck className="h-6 w-6 text-primary" />
           <div>
-            <h1 className="text-xl font-bold tracking-tight text-slate-900 md:text-2xl">
-              {currentPage}
-            </h1>
-            <p className="mt-1 text-xs text-slate-500">Teacher Panel</p>
+            <h1 className="text-xl font-bold tracking-tight md:text-2xl">{currentPage}</h1>
+            <p className="mt-1 text-xs text-muted-foreground">Teacher Panel</p>
           </div>
         </div>
 
         <div className="flex items-center gap-2 md:gap-4">
           <div className="flex items-center gap-3">
-            <UserCircle2 className="h-8 w-8 text-slate-700" />
+            <UserCircle2 className="h-8 w-8 text-muted-foreground" />
 
             <div className="hidden flex-col leading-tight sm:flex">
-              <span className="text-sm font-semibold text-slate-900">
-                {user?.name || "Unknown User"}
-              </span>
-              <span className="text-xs capitalize text-slate-500">
+              <span className="text-sm font-semibold">{user?.name || "Unknown User"}</span>
+              <span className="text-xs capitalize text-muted-foreground">
                 {user?.role || "No Role"}
               </span>
             </div>
           </div>
 
-          <Button
-            size="sm"
-            onClick={handleLogout}
-            disabled={isLoading}
-            className="gap-2 bg-blue-900 px-4 text-white hover:bg-blue-800"
-          >
+          <Button size="sm" onClick={handleLogout} disabled={isLoading} className="gap-2">
             <LogOut className="h-4 w-4" />
             <span className="hidden sm:inline">
               {isLoading ? "Logging out..." : "Logout"}

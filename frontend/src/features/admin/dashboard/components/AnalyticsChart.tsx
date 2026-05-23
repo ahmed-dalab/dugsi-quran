@@ -1,4 +1,5 @@
 import { Card } from "@/components/ui/card";
+import { chartColors } from "@/design-system/tokens";
 import { cn } from "@/lib/utils";
 
 interface ChartData {
@@ -15,40 +16,38 @@ interface AnalyticsChartProps {
   className?: string;
 }
 
-export default function AnalyticsChart({ 
-  title, 
-  subtitle, 
-  data, 
+export default function AnalyticsChart({
+  title,
+  subtitle,
+  data,
   type = "bar",
-  className 
+  className,
 }: AnalyticsChartProps) {
-  const maxValue = Math.max(...data.map(item => item.value));
+  const maxValue = Math.max(...data.map((item) => item.value));
   const totalValue = data.reduce((sum, item) => sum + item.value, 0);
-  
+
   return (
-    <Card className={cn("p-4 border-0 bg-gradient-to-br from-white to-gray-50/30 shadow-sm", className)}>
+    <Card className={cn("p-4", className)}>
       <div className="space-y-2.5">
         <div>
-          <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
-          {subtitle && (
-            <p className="text-sm text-gray-500 mt-1">{subtitle}</p>
-          )}
+          <h3 className="text-lg font-semibold">{title}</h3>
+          {subtitle ? <p className="mt-1 text-sm text-muted-foreground">{subtitle}</p> : null}
         </div>
-        
+
         <div className="space-y-2.5">
           {data.map((item, index) => (
             <div key={index} className="space-y-2">
               <div className="flex items-center justify-between text-sm">
-                <span className="font-medium text-gray-700">{item.label}</span>
+                <span className="font-medium text-foreground">{item.label}</span>
                 <div className="flex items-center gap-2">
-                  <span className="text-gray-900 font-semibold">{item.value}</span>
-                  <span className="text-gray-500 text-xs">
+                  <span className="font-semibold">{item.value}</span>
+                  <span className="text-xs text-muted-foreground">
                     ({totalValue > 0 ? Math.round((item.value / totalValue) * 100) : 0}%)
                   </span>
                 </div>
               </div>
-              
-              <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+
+              <div className="h-1.5 overflow-hidden rounded-full bg-muted">
                 <div
                   className={cn(
                     "h-full rounded-full transition-all duration-500 ease-out",
@@ -56,16 +55,16 @@ export default function AnalyticsChart({
                   )}
                   style={{
                     width: `${maxValue > 0 ? (item.value / maxValue) * 100 : 0}%`,
-                    backgroundColor: item.color || '#3b82f6'
+                    backgroundColor: item.color ?? chartColors.primary,
                   }}
                 />
               </div>
             </div>
           ))}
         </div>
-        
-        <div className="pt-1.5 border-t border-gray-100">
-          <div className="flex items-center justify-between text-xs text-gray-500">
+
+        <div className="border-t pt-1.5">
+          <div className="flex items-center justify-between text-xs text-muted-foreground">
             <span>Total: {totalValue}</span>
             <span>{data.length} categories</span>
           </div>

@@ -119,3 +119,18 @@ receivedBy
 note optional
 createdAt
 updatedAt
+
+
+
+Frontend Hosting services
+  - Vercel, Netlify, Cloudfare Pages, 
+Backend Hosting services
+   - Render, Railway
+Databases: Neon
+Auth: Clerk, auth.js
+Email: Resend
+File storage — Cloudflare R2
+Caching / queues — Upstash Redis
+Monitoring — Axiom
+Analytics — PostHog
+Payments — Stripe has no monthly fee

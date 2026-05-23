@@ -37,11 +37,12 @@ app.use(
 );
 
 
-app.get('/api/health', (req: Request, res: Response)=>{ 
+app.get('/api/health', async (_req: Request, res: Response)=>{ 
+    const connected = await isDbConnected();
     res.status(200).json({
         message: "Server is health",
         version: env.API_VERSION,
-        database: isDbConnected() ? "connected" : "disconnected",
+        database: connected ? "connected" : "disconnected",
         hasDatabaseUrl: Boolean(env.DATABASE_URL),
     })
 })

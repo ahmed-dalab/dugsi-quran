@@ -28,13 +28,7 @@ import {
   FieldLabel,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { AppSelect } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { useState } from "react";
 
@@ -136,18 +130,17 @@ export default function EditUserDialog({ user, triggerClassName }: EditUserDialo
               render={({ field, fieldState }) => (
                 <Field data-invalid={fieldState.invalid}>
                   <FieldLabel>Role</FieldLabel>
-                  <Select
+                  <AppSelect
                     value={field.value}
-                    onValueChange={field.onChange}
-                  >
-                    <SelectTrigger aria-invalid={fieldState.invalid}>
-                      <SelectValue placeholder="Select role" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="admin">Admin</SelectItem>
-                      <SelectItem value="teacher">Teacher</SelectItem>
-                    </SelectContent>
-                  </Select>
+                    onChange={field.onChange}
+                    invalid={fieldState.invalid}
+                    placeholder="Select role"
+                    isSearchable={false}
+                    options={[
+                      { value: "admin", label: "Admin" },
+                      { value: "teacher", label: "Teacher" },
+                    ]}
+                  />
                   {fieldState.invalid && (
                     <FieldError errors={[fieldState.error]} />
                   )}

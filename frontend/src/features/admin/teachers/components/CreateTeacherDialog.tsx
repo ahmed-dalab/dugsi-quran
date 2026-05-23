@@ -21,7 +21,8 @@ import {
   FieldLabel,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { PasswordInput } from "@/components/ui/password-input";
+import { AppSelect } from "@/components/ui/select";
 import { useCreateTeacherMutation } from "../api/teacherApi";
 import {
   createTeacherSchema,
@@ -143,10 +144,9 @@ export default function CreateTeacherDialog({
               render={({ field, fieldState }) => (
                 <Field data-invalid={fieldState.invalid}>
                   <FieldLabel htmlFor="teacher-password">Password *</FieldLabel>
-                  <Input
+                  <PasswordInput
                     {...field}
                     id="teacher-password"
-                    type="password"
                     placeholder="Enter password"
                     aria-invalid={fieldState.invalid}
                   />
@@ -178,15 +178,16 @@ export default function CreateTeacherDialog({
               render={({ field, fieldState }) => (
                 <Field data-invalid={fieldState.invalid}>
                   <FieldLabel>Gender</FieldLabel>
-                  <Select value={field.value} onValueChange={field.onChange}>
-                    <SelectTrigger aria-invalid={fieldState.invalid}>
-                      <SelectValue placeholder="Select gender" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="male">Male</SelectItem>
-                      <SelectItem value="female">Female</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <AppSelect
+                    value={field.value}
+                    onChange={field.onChange}
+                    invalid={fieldState.invalid}
+                    placeholder="Select gender"
+                    options={[
+                      { value: "male", label: "Male" },
+                      { value: "female", label: "Female" },
+                    ]}
+                  />
                   {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
                 </Field>
               )}
@@ -215,15 +216,17 @@ export default function CreateTeacherDialog({
               render={({ field, fieldState }) => (
                 <Field data-invalid={fieldState.invalid}>
                   <FieldLabel>Status</FieldLabel>
-                  <Select value={field.value} onValueChange={field.onChange}>
-                    <SelectTrigger aria-invalid={fieldState.invalid}>
-                      <SelectValue placeholder="Select status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="active">Active</SelectItem>
-                      <SelectItem value="inactive">Inactive</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <AppSelect
+                    value={field.value}
+                    onChange={field.onChange}
+                    invalid={fieldState.invalid}
+                    placeholder="Select status"
+                    isSearchable={false}
+                    options={[
+                      { value: "active", label: "Active" },
+                      { value: "inactive", label: "Inactive" },
+                    ]}
+                  />
                   {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
                 </Field>
               )}

@@ -3,9 +3,9 @@ import dotenv from "dotenv";
 dotenv.config();
 
 import bcrypt from "bcryptjs";
-import mongoose from "mongoose";
+import { connectDB, disconnectDB } from "../config/database";
 import { env } from "../config/env";
-import { User } from "../modules/users/user.model";
+import { userRepository } from "../modules/users/user.repository";
 
 const ADMIN = {
   name: "Ahmed",
@@ -17,10 +17,10 @@ const ADMIN = {
 
 const seedAdmin = async () => {
   try {
-    await mongoose.connect(env.DATABASE_URL);
-    console.log("Connected to MongoDB");
+    await connectDB({ exitOnFailure: true });
+    console.log("Connected to PostgreSQL");
 
-    const existing = await User.findOne({ email: ADMIN.email });
+    const existing = await userRepository.findByEmailWithPassword(ADMIN.email);
 
     if (existing) {
       console.log(`Admin already exists: ${ADMIN.email}`);
@@ -29,7 +29,7 @@ const seedAdmin = async () => {
 
     const hashedPassword = await bcrypt.hash(ADMIN.password, env.HASH_SALT_ROUNDS);
 
-    await User.create({
+    await userRepository.create({
       ...ADMIN,
       password: hashedPassword,
     });
@@ -39,8 +39,8 @@ const seedAdmin = async () => {
     console.error("Seed failed:", error);
     process.exitCode = 1;
   } finally {
-    await mongoose.disconnect();
-    console.log("Disconnected from MongoDB");
+    await disconnectDB();
+    console.log("Disconnected from PostgreSQL");
   }
 };
 

@@ -18,13 +18,7 @@ import {
 } from "@/components/ui/dialog";
 import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { AppSelect } from "@/components/ui/select";
 import { useCreateFeeMutation } from "../api/feeApi";
 import { createFeeSchema, type CreateFeeFormValues } from "../schemas/createFeeSchema";
 
@@ -117,10 +111,10 @@ export default function CreateFeeDialog({ triggerClassName }: CreateFeeDialogPro
               render={({ field, fieldState }) => (
                 <Field data-invalid={fieldState.invalid}>
                   <FieldLabel>Student</FieldLabel>
-                  <Select
+                  <AppSelect
                     value={field.value}
-                    onValueChange={(value) => {
-                      field.onChange(value);
+                    onChange={(value) => {
+                      field.onChange(value ?? "");
                       const student = studentsData?.data.find((item) => item._id === value);
                       if (!student) return;
                       const classId =
@@ -129,18 +123,15 @@ export default function CreateFeeDialog({ triggerClassName }: CreateFeeDialogPro
                           : student.classId._id;
                       form.setValue("classId", classId, { shouldValidate: true });
                     }}
-                  >
-                    <SelectTrigger aria-invalid={fieldState.invalid}>
-                      <SelectValue placeholder="Select student" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {studentsData?.data.map((student) => (
-                        <SelectItem key={student._id} value={student._id}>
-                          {student.fullName}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                    invalid={fieldState.invalid}
+                    placeholder="Search and select student"
+                    options={
+                      studentsData?.data.map((student) => ({
+                        value: student._id,
+                        label: student.fullName,
+                      })) ?? []
+                    }
+                  />
                   {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
                 </Field>
               )}

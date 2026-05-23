@@ -1,6 +1,3 @@
-import { Schema, model } from "mongoose";
-import mongoosePaginate from "mongoose-paginate-v2";
-import type { PaginateModel } from "mongoose";
 import { USER_ROLE } from "./user.constant";
 
 export type UserRole = (typeof USER_ROLE)[keyof typeof USER_ROLE];
@@ -12,47 +9,3 @@ export interface IUser {
   role: UserRole;
   isActive: boolean;
 }
-
-const userSchema = new Schema<IUser>(
-  {
-    name: {
-      type: String,
-      required: [true, "Name is required"],
-      trim: true,
-      minlength: [2, "Name must be at least 2 characters"],
-    },
-    email: {
-      type: String,
-      required: [true, "Email is required"],
-      unique: true,
-      lowercase: true,
-      trim: true,
-      match: [/\S+@\S+\.\S+/, "Please provide a valid email"],
-    },
-    password: {
-      type: String,
-      required: [true, "Password is required"],
-      minlength: [6, "Password must be at least 6 characters"],
-      select: false,
-    },
-    role: {
-      type: String,
-      enum: ["admin", "teacher"],
-      required: true,
-      default: "teacher",
-    },
-    isActive: {
-      type: Boolean,
-      default: true,
-    },
-  },
-  {
-    timestamps: true,
-  }
-);
-
-userSchema.plugin(mongoosePaginate);
-
-export interface UserModel extends PaginateModel<IUser> {}
-
-export const User = model<IUser, UserModel>("User", userSchema);

@@ -5,13 +5,7 @@ import { useAppSelector } from "@/app/hooks";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { AppSelect } from "@/components/ui/select";
 import { useGetClassesQuery } from "@/features/admin/classes/api/classApi";
 import { useGetStudentsQuery } from "@/features/admin/students/api/studentApi";
 import ListSearch from "@/components/common/ListSearch";
@@ -153,7 +147,7 @@ export default function AttendancePage() {
         </p>
       </div>
 
-      <div className="rounded-lg border bg-white p-4 sm:p-6 space-y-4">
+      <div className="rounded-lg border border-border bg-card p-4 sm:p-6 space-y-4">
         <div className="flex justify-end">
           <Button
             variant={showAttendanceForm ? "outline" : "default"}
@@ -168,18 +162,18 @@ export default function AttendancePage() {
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="attendance-class">Class</Label>
-                <Select value={selectedClassId} onValueChange={setSelectedClassId}>
-                  <SelectTrigger id="attendance-class">
-                    <SelectValue placeholder="Select class" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {classesData?.data.map((classItem) => (
-                      <SelectItem key={classItem._id} value={classItem._id}>
-                        {classItem.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <AppSelect
+                  id="attendance-class"
+                  value={selectedClassId}
+                  onChange={(value) => setSelectedClassId(value ?? "")}
+                  placeholder="Search and select class"
+                  options={
+                    classesData?.data.map((classItem) => ({
+                      value: classItem._id,
+                      label: classItem.name,
+                    })) ?? []
+                  }
+                />
               </div>
 
               <div className="space-y-2">
@@ -215,7 +209,7 @@ export default function AttendancePage() {
                             <div className="flex items-center gap-3">
                               <input
                                 type="checkbox"
-                                className="h-5 w-5 cursor-pointer accent-blue-600"
+                                className="h-5 w-5 cursor-pointer accent-primary"
                                 checked={Boolean(checkedByStudentId[student._id])}
                                 onChange={(event) =>
                                   handleCheckChange(student._id, event.target.checked)
@@ -245,7 +239,7 @@ export default function AttendancePage() {
       </div>
 
       {selectedClassId ? (
-        <div className="rounded-lg border bg-white p-4 sm:p-6 space-y-4">
+        <div className="rounded-lg border border-border bg-card p-4 sm:p-6 space-y-4">
           <h2 className="text-lg font-semibold">Attendance History</h2>
 
           <ListSearch

@@ -1,0 +1,279 @@
+// Prisma schema — mirrors existing Mongoose models for dugsi-quran
+// Run: npx prisma migrate dev --name init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─── Enums ───────────────────────────────────────────────────────────────────
+
+enum UserRole {
+  admin
+  teacher
+}
+
+enum TeacherGender {
+  male
+  female
+}
+
+enum TeacherStatus {
+  active
+  inactive
+}
+
+enum EmploymentType {
+  full_time  @map("full-time")
+  part_time  @map("part-time")
+  volunteer
+}
+
+enum StudentGender {
+  male
+  female
+}
+
+enum StudentStatus {
+  active
+  inactive
+}
+
+enum AssignmentStatus {
+  active
+  inactive
+  ended
+}
+
+enum FeePaymentStatus {
+  paid
+  partial
+  unpaid
+}
+
+enum AttendanceStatus {
+  present
+  absent
+  late
+  excused
+}
+
+// ─── Auth & users ────────────────────────────────────────────────────────────
+
+model User {
+  id        String   @id @default(uuid()) @db.Uuid
+  name      String
+  email     String   @unique
+  password  String
+  role      UserRole @default(teacher)
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  teacher              Teacher?
+  refreshTokens        RefreshToken[]
+  classesAsTeacher     Class[]                @relation("ClassTeacherUser")
+  assignmentsCreated   TeacherClassAssignment[] @relation("AssignmentCreatedBy")
+  attendancesTaken     Attendance[]           @relation("AttendanceTakenBy")
+  feePaymentsReceived  FeePayment[]           @relation("FeePaymentReceivedBy")
+
+  @@map("users")
+}
+
+model RefreshToken {
+  id                  String    @id @default(uuid()) @db.Uuid
+  userId              String    @map("user_id") @db.Uuid
+  tokenHash           String    @unique @map("token_hash")
+  expiresAt           DateTime  @map("expires_at")
+  revokedAt           DateTime? @map("revoked_at")
+  replacedByTokenHash String?   @map("replaced_by_token_hash")
+  userAgent           String?   @map("user_agent")
+  ipAddress           String?   @map("ip_address")
+  createdAt           DateTime  @default(now()) @map("created_at")
+  updatedAt           DateTime  @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("refresh_tokens")
+}
+
+// ─── School structure ────────────────────────────────────────────────────────
+
+model Teacher {
+  id                         String          @id @default(uuid()) @db.Uuid
+  userId                     String          @unique @map("user_id") @db.Uuid
+  employeeId                 String?         @unique @map("employee_id")
+  phone                      String?
+  address                    String?
+  gender                     TeacherGender?
+  dateOfBirth                DateTime?       @map("date_of_birth")
+  hireDate                   DateTime        @default(now()) @map("hire_date")
+  qualification              String?
+  specialization             String?
+  experience                 String?
+  salary                     Float?
+  employmentType             EmploymentType  @default(full_time) @map("employment_type")
+  status                     TeacherStatus   @default(active)
+  emergencyContactName       String?         @map("emergency_contact_name")
+  emergencyContactPhone      String?         @map("emergency_contact_phone")
+  emergencyContactRelationship String?       @map("emergency_contact_relationship")
+  createdAt                  DateTime        @default(now()) @map("created_at")
+  updatedAt                  DateTime        @updatedAt @map("updated_at")
+
+  user        User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  assignments TeacherClassAssignment[]
+
+  @@index([status])
+  @@map("teachers")
+}
+
+model Class {
+  id          String   @id @default(uuid()) @db.Uuid
+  name        String   @unique
+  levelOrder  Int      @unique @map("level_order")
+  monthlyFee  Float    @default(0) @map("monthly_fee")
+  teacherId   String?  @map("teacher_id") @db.Uuid
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  teacherUser User?                    @relation("ClassTeacherUser", fields: [teacherId], references: [id], onDelete: SetNull)
+  students    Student[]
+  assignments TeacherClassAssignment[]
+  attendances Attendance[]
+  feePayments FeePayment[]
+
+  @@map("classes")
+}
+
+model Student {
+  id               String        @id @default(uuid()) @db.Uuid
+  fullName         String        @map("full_name")
+  gender           StudentGender
+  dateOfBirth      DateTime?     @map("date_of_birth")
+  guardianName     String?       @map("guardian_name")
+  guardianPhone    String        @map("guardian_phone")
+  classId          String        @map("class_id") @db.Uuid
+  registrationDate DateTime      @default(now()) @map("registration_date")
+  status           StudentStatus @default(active)
+  createdAt        DateTime      @default(now()) @map("created_at")
+  updatedAt        DateTime      @updatedAt @map("updated_at")
+
+  class              Class              @relation(fields: [classId], references: [id], onDelete: Restrict)
+  feePayments        FeePayment[]
+  attendanceRecords  AttendanceRecord[]
+
+  @@index([classId])
+  @@index([status])
+  @@map("students")
+}
+
+model TeacherClassAssignment {
+  id           String           @id @default(uuid()) @db.Uuid
+  teacherId    String           @map("teacher_id") @db.Uuid
+  classId      String           @map("class_id") @db.Uuid
+  status       AssignmentStatus @default(active)
+  assignedDate DateTime         @default(now()) @map("assigned_date")
+  endDate      DateTime?        @map("end_date")
+  assignedById String           @map("assigned_by_id") @db.Uuid
+  notes        String?
+  createdAt    DateTime         @default(now()) @map("created_at")
+  updatedAt    DateTime         @updatedAt @map("updated_at")
+
+  teacher    Teacher @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  class      Class   @relation(fields: [classId], references: [id], onDelete: Cascade)
+  assignedBy User    @relation("AssignmentCreatedBy", fields: [assignedById], references: [id], onDelete: Restrict)
+
+  @@index([teacherId, status])
+  @@index([classId, status])
+  @@index([assignedDate])
+  // Only one active assignment per teacher+class — add partial unique index in migration SQL if needed:
+  // CREATE UNIQUE INDEX ... ON teacher_class_assignments(teacher_id, class_id) WHERE status = 'active';
+  @@map("teacher_class_assignments")
+}
+
+// ─── Fees ────────────────────────────────────────────────────────────────────
+
+model FeePayment {
+  id          String           @id @default(uuid()) @db.Uuid
+  studentId   String           @map("student_id") @db.Uuid
+  classId     String           @map("class_id") @db.Uuid
+  month       Int
+  year        Int
+  amountDue   Float            @map("amount_due")
+  amountPaid  Float            @default(0) @map("amount_paid")
+  status      FeePaymentStatus
+  paymentDate DateTime?        @map("payment_date")
+  receivedById String?         @map("received_by_id") @db.Uuid
+  note        String?          @db.VarChar(500)
+  createdAt   DateTime         @default(now()) @map("created_at")
+  updatedAt   DateTime         @updatedAt @map("updated_at")
+
+  student    Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  class      Class   @relation(fields: [classId], references: [id], onDelete: Restrict)
+  receivedBy User?   @relation("FeePaymentReceivedBy", fields: [receivedById], references: [id], onDelete: SetNull)
+
+  @@unique([studentId, month, year])
+  @@index([classId])
+  @@index([status])
+  @@map("fee_payments")
+}
+
+// ─── Attendance ──────────────────────────────────────────────────────────────
+
+model Attendance {
+  id        String   @id @default(uuid()) @db.Uuid
+  classId   String   @map("class_id") @db.Uuid
+  date      String
+  takenById String   @map("taken_by_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  class   Class              @relation(fields: [classId], references: [id], onDelete: Cascade)
+  takenBy User               @relation("AttendanceTakenBy", fields: [takenById], references: [id], onDelete: Restrict)
+  records AttendanceRecord[]
+
+  @@unique([classId, date])
+  @@index([date])
+  @@map("attendances")
+}
+
+model AttendanceRecord {
+  id           String           @id @default(uuid()) @db.Uuid
+  attendanceId String           @map("attendance_id") @db.Uuid
+  studentId    String           @map("student_id") @db.Uuid
+  status       AttendanceStatus
+  note         String?
+  createdAt    DateTime         @default(now()) @map("created_at")
+  updatedAt    DateTime         @updatedAt @map("updated_at")
+
+  attendance Attendance @relation(fields: [attendanceId], references: [id], onDelete: Cascade)
+  student    Student    @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([attendanceId, studentId])
+  @@map("attendance_records")
+}
+
+// ─── Settings (singleton row in app logic) ───────────────────────────────────
+
+model Settings {
+  id                       String   @id @default(uuid()) @db.Uuid
+  schoolName               String   @default("Dugsi Quran") @map("school_name")
+  schoolEmail              String?  @map("school_email")
+  schoolPhone              String?  @map("school_phone")
+  schoolAddress            String?  @map("school_address")
+  timezone                 String   @default("Africa/Mogadishu")
+  currency                 String   @default("USD") @db.Char(3)
+  attendanceEditWindowDays Int      @default(7) @map("attendance_edit_window_days")
+  activeAcademicYear       String   @default("2026") @map("active_academic_year")
+  createdAt                DateTime @default(now()) @map("created_at")
+  updatedAt                DateTime @updatedAt @map("updated_at")
+
+  @@map("settings")
+}

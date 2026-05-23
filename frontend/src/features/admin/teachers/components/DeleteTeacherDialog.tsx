@@ -3,6 +3,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import {
   Dialog,
   DialogContent,
@@ -44,9 +45,9 @@ export default function DeleteTeacherDialog({
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button
-          variant="ghost"
+          variant="destructive"
           size="sm"
-          className={`gap-2 text-red-600 hover:text-red-700 hover:bg-red-50 ${triggerClassName ?? ""}`}
+          className={cn("gap-2", triggerClassName)}
         >
           <Trash2 className="h-4 w-4" />
           Delete

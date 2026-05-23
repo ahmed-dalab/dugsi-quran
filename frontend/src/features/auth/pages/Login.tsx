@@ -1,7 +1,5 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Eye, EyeOff } from "lucide-react";
 import { Controller, useForm } from "react-hook-form";
-import { useState } from "react";
 import { useNavigate } from "react-router";
 import { z } from "zod";
 
@@ -24,18 +22,16 @@ import {
   FieldLabel,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import  { loginSchema } from "../schemas/loginSchema";
+import { PasswordInput } from "@/components/ui/password-input";
+import { loginSchema } from "../schemas/loginSchema";
 import { useLoginMutation } from "../authApi";
 import loginImage from "@/assets/login.png";
-
-
 
 type LoginFormValues = z.infer<typeof loginSchema>;
 
 export default function Login() {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
-  const [showPassword, setShowPassword] = useState(false);
   const [login, { isLoading, error }] = useLoginMutation();
 
   const form = useForm<LoginFormValues>({
@@ -46,11 +42,11 @@ export default function Login() {
     },
   });
 
-   async function onSubmit(values: LoginFormValues) {
+  async function onSubmit(values: LoginFormValues) {
     try {
       const response = await login(values).unwrap();
 
-     dispatch(
+      dispatch(
         setCredentials({
           accessToken: response.accessToken,
           user: response.user,
@@ -72,7 +68,7 @@ export default function Login() {
     }
   }
 
-   function getErrorMessage() {
+  function getErrorMessage() {
     if (!error) return null;
 
     if ("data" in error && error.data && typeof error.data === "object") {
@@ -87,13 +83,13 @@ export default function Login() {
 
   return (
     <div
-      className="relative flex min-h-screen items-center justify-center bg-cover bg-center bg-no-repeat px-4"
+      className="relative flex min-h-screen items-center justify-center bg-cover bg-center bg-no-repeat px-4 py-8"
       style={{ backgroundImage: `url(${loginImage})` }}
     >
-      <div className="absolute inset-0 bg-black/40" />
-      <Card className="relative z-10 w-full max-w-md border-white/30 bg-background/90 shadow-2xl backdrop-blur-md">
-        <CardHeader className="space-y-4 items-center text-center">
-          <CardTitle>Sign in</CardTitle>
+      <div className="absolute inset-0 bg-black/45" />
+      <Card className="relative z-10 w-full max-w-md border-border/60 bg-card/95 shadow-2xl backdrop-blur-md">
+        <CardHeader className="items-center space-y-2 text-center">
+          <CardTitle className="text-2xl">Sign in</CardTitle>
           <CardDescription>
             Enter your credentials to access your account.
           </CardDescription>
@@ -112,10 +108,9 @@ export default function Login() {
                       {...field}
                       id="login-email"
                       type="email"
-                      placeholder="name@gmail.com"
-                      autoComplete="gmail"
+                      placeholder="you@example.com"
+                      autoComplete="email"
                       aria-invalid={fieldState.invalid}
-                      className="h-11 rounded-xl border-white/40 bg-white/90 shadow-sm transition focus-visible:ring-2 focus-visible:ring-primary/70"
                     />
                     {fieldState.invalid && (
                       <FieldError errors={[fieldState.error]} />
@@ -130,30 +125,13 @@ export default function Login() {
                 render={({ field, fieldState }) => (
                   <Field data-invalid={fieldState.invalid}>
                     <FieldLabel htmlFor="login-password">Password</FieldLabel>
-                    <div className="relative">
-                      <Input
-                        {...field}
-                        id="login-password"
-                        type={showPassword ? "text" : "password"}
-                        placeholder="Enter your password"
-                        autoComplete="current-password"
-                        aria-invalid={fieldState.invalid}
-                        className="h-11 rounded-xl border-white/40 bg-white/90 pr-11 shadow-sm transition focus-visible:ring-2 focus-visible:ring-primary/70"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword((prev) => !prev)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground transition hover:text-foreground"
-                        aria-label={showPassword ? "Hide password" : "Show password"}
-                        aria-pressed={showPassword}
-                      >
-                        {showPassword ? (
-                          <EyeOff className="h-4 w-4" />
-                        ) : (
-                          <Eye className="h-4 w-4" />
-                        )}
-                      </button>
-                    </div>
+                    <PasswordInput
+                      {...field}
+                      id="login-password"
+                      placeholder="Enter your password"
+                      autoComplete="current-password"
+                      aria-invalid={fieldState.invalid}
+                    />
                     {fieldState.invalid && (
                       <FieldError errors={[fieldState.error]} />
                     )}
@@ -172,7 +150,7 @@ export default function Login() {
           <Button
             type="submit"
             form="login-form"
-            className="h-11 w-full rounded-xl bg-primary font-semibold shadow-lg transition hover:opacity-95"
+            className="h-11 w-full rounded-xl font-semibold shadow-md"
             disabled={isLoading}
           >
             {isLoading ? "Signing in..." : "Sign in"}
