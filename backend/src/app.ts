@@ -2,23 +2,9 @@ import express, { Request, Response} from "express"
 import helmet from "helmet"
 import cors from "cors"
 import cookieParser from "cookie-parser";
-
-
-
-// route imports
-import authRouter from "./modules/auth/auth.route"
-import userRouter from "./modules/users/user.route"
-import classRouter from "./modules/classes/class.route"
-import studentRouter from "./modules/students/student.route"
-import teacherRouter from "./modules/teachers/teacher.route"
-import assignmentRouter from "./modules/assignments/assignment.route"
-import dashboardRouter from "./modules/dashboard/dashboard.route"
-import attendanceRouter from "./modules/attendance/attendance.route"
-import feeRouter from "./modules/fees/fee.route"
-import settingsRouter from "./modules/settings/settings.route"
-import reportsRouter from "./modules/reports/reports.route"
+import v1Router from "./routes/v1.routes"
 import { env } from "./config/env"
-import { authenticate, authorize } from "./middlewares/auth.middleware"
+
 const app = express()
 
 app.use(express.json())
@@ -51,22 +37,12 @@ app.use(
 
 app.get('/api/health', (req: Request, res: Response)=>{ 
     res.status(200).json({
-        message: "Server is health"
+        message: "Server is health",
+        version: env.API_VERSION,
     })
 })
 
-// auth routes 
-app.use("/api/auth", authRouter) 
-app.use('/api/users',authenticate, authorize("admin"), userRouter)
-app.use("/api/classes", authenticate, authorize("admin"), classRouter)
-app.use("/api/students", authenticate, authorize("admin"), studentRouter)
-app.use("/api/teachers", authenticate, authorize("admin"), teacherRouter)
-app.use("/api/assignments", authenticate, authorize("admin"), assignmentRouter)
-app.use("/api/dashboard", authenticate, authorize("admin"), dashboardRouter)
-app.use("/api/attendance", authenticate, authorize("admin"), attendanceRouter)
-app.use("/api/fees", authenticate, authorize("admin"), feeRouter)
-app.use("/api/settings", authenticate, authorize("admin"), settingsRouter)
-app.use("/api/reports", authenticate, authorize("admin"), reportsRouter)
+app.use(env.API_PREFIX, v1Router)
 
 
 export default app

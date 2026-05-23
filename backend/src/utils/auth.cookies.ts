@@ -6,7 +6,7 @@ export function setRefreshTokenCookie(res: Response, token: string) {
     httpOnly: true,
     secure: env.NODE_ENV === "production",
     sameSite: env.NODE_ENV === "production" ? "none" : "lax",
-    path: "/api/auth",
+    path: `${env.API_PREFIX}/auth`,
     maxAge: 7 * 24 * 60 * 60 * 1000,
   });
 }
@@ -16,6 +16,6 @@ export function clearRefreshTokenCookie(res: Response) {
     httpOnly: true,
     secure: env.NODE_ENV === "production",
     sameSite: env.NODE_ENV === "production" ? "none" : "lax",
-    path: "/api/auth",
+    path: `${env.API_PREFIX}/auth`,
   });
 }

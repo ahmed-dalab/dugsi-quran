@@ -5,8 +5,12 @@ dotenv.config()
 
 
 
+const API_VERSION = process.env.API_VERSION || "v1";
+
 const env  = {
     PORT: process.env.PORT || 8080,
+    API_VERSION,
+    API_PREFIX: `/api/${API_VERSION}`,
     NODE_ENV: process.env.NODE_ENV,
     DATABASE_URL: process.env.DATABASE_URL as string,
     JWT_ACCESS_SECRET: process.env.JWT_ACCESS_SECRET as string,
