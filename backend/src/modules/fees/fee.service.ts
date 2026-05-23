@@ -1,7 +1,15 @@
 import { isValidObjectId, type Types } from "mongoose";
+import type { Request } from "express";
 import { ClassModel } from "../classes/class.model";
 import { StudentModel } from "../students/student.model";
 import { FeePaymentModel, type FeePaymentStatus, type IFeePayment } from "./fee.model";
+import {
+  buildSearchFilter,
+  getPaginateOptions,
+  getQueryString,
+  parsePaginationQuery,
+  toPaginatedList,
+} from "../../utils/pagination";
 
 type CreateFeePayload = Omit<IFeePayment, "status">;
 type UpdateFeePayload = Partial<Omit<IFeePayment, "status">>;
@@ -89,15 +97,50 @@ export const createFeeService = async (payload: CreateFeePayload, userId?: strin
   return getFeeByIdService(String(fee._id));
 };
 
-export const getFeesService = async () => {
-  const fees = await FeePaymentModel.find()
-    .sort({ year: -1, month: -1, createdAt: -1 })
-    .populate("studentId", "_id fullName")
-    .populate("classId", "_id name levelOrder")
-    .populate("receivedBy", "_id name")
-    .lean();
+export const getFeesService = async (query: Request["query"]) => {
+  const pagination = parsePaginationQuery(query, { sortBy: "createdAt", sortOrder: "desc" });
+  const filter: Record<string, unknown> = {
+    ...buildSearchFilter(pagination.search, ["note", "status"]),
+  };
 
-  return fees.map((fee) => sanitizeFee(fee));
+  const status = getQueryString(query, "status");
+  if (status === "paid" || status === "partial" || status === "unpaid") {
+    filter.status = status;
+  }
+
+  const classId = getQueryString(query, "classId");
+  if (classId && isValidObjectId(classId)) {
+    filter.classId = classId;
+  }
+
+  const studentId = getQueryString(query, "studentId");
+  if (studentId && isValidObjectId(studentId)) {
+    filter.studentId = studentId;
+  }
+
+  const month = Number.parseInt(String(query.month ?? ""), 10);
+  if (month >= 1 && month <= 12) {
+    filter.month = month;
+  }
+
+  const year = Number.parseInt(String(query.year ?? ""), 10);
+  if (year >= 2000) {
+    filter.year = year;
+  }
+
+  const result = await FeePaymentModel.paginate(
+    filter,
+    getPaginateOptions(pagination, {
+      sort: { year: -1, month: -1, createdAt: -1 },
+      populate: [
+        { path: "studentId", select: "_id fullName" },
+        { path: "classId", select: "_id name levelOrder" },
+        { path: "receivedBy", select: "_id name" },
+      ],
+    })
+  );
+
+  return toPaginatedList(result, sanitizeFee);
 };
 
 export const getFeeByIdService = async (id: string) => {

@@ -1,4 +1,6 @@
 import { Schema, model, type Types } from "mongoose";
+import mongoosePaginate from "mongoose-paginate-v2";
+import type { PaginateModel } from "mongoose";
 
 export type FeePaymentStatus = "paid" | "partial" | "unpaid";
 
@@ -77,5 +79,8 @@ const feePaymentSchema = new Schema<IFeePayment>(
 );
 
 feePaymentSchema.index({ studentId: 1, month: 1, year: 1 }, { unique: true });
+feePaymentSchema.plugin(mongoosePaginate);
 
-export const FeePaymentModel = model<IFeePayment>("FeePayment", feePaymentSchema);
+export interface FeePaymentModelType extends PaginateModel<IFeePayment> {}
+
+export const FeePaymentModel = model<IFeePayment, FeePaymentModelType>("FeePayment", feePaymentSchema);

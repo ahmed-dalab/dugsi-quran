@@ -1,12 +1,16 @@
 import { useAppSelector } from "@/app/hooks";
+import ListSearch from "@/components/common/ListSearch";
+import TablePagination from "@/components/common/TablePagination";
+import { useListQueryState } from "@/hooks/useListQueryState";
 import CreateClassDialog from "../components/CreateClassDialog";
 import ClassesTable from "../components/ClassesTable";
 import { useGetClassesQuery } from "../api/classApi";
 
 export default function Classes() {
   const { accessToken, isBootstrapping } = useAppSelector((state) => state.auth);
+  const { search, setSearch, params, setPage } = useListQueryState();
 
-  const { data, isLoading, isError } = useGetClassesQuery(undefined, {
+  const { data, isLoading, isError, isFetching } = useGetClassesQuery(params, {
     skip: isBootstrapping || !accessToken,
   });
 
@@ -35,11 +39,19 @@ export default function Classes() {
         <CreateClassDialog />
       </div>
 
+      <ListSearch value={search} onChange={setSearch} placeholder="Search by class name..." />
+
       {!data || data.data.length === 0 ? (
         <div>No classes found.</div>
       ) : (
         <ClassesTable classes={data.data} />
       )}
+
+      <TablePagination
+        pagination={data?.pagination}
+        onPageChange={setPage}
+        isLoading={isFetching}
+      />
     </div>
   );
 }

@@ -1,4 +1,6 @@
 import { baseApi } from "@/app/baseApi";
+import { toListQueryParams, type ListQueryParams } from "@/lib/pagination";
+import type { PaginatedResponse } from "@/types/pagination";
 import type { FeePayment } from "../types/fee.types";
 
 export interface CreateFeeRequest {
@@ -26,17 +28,15 @@ export interface FeeResponse {
   data: FeePayment;
 }
 
-export interface FeesResponse {
-  message: string;
-  data: FeePayment[];
-}
+export type FeesResponse = PaginatedResponse<FeePayment>;
 
 export const feeApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
-    getFees: builder.query<FeesResponse, void>({
-      query: () => ({
+    getFees: builder.query<FeesResponse, ListQueryParams | void>({
+      query: (params) => ({
         url: "/fees/",
         method: "GET",
+        params: toListQueryParams(params ?? undefined),
       }),
       providesTags: ["Fees"],
     }),

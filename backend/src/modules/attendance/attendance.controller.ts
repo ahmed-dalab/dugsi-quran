@@ -72,11 +72,12 @@ export const getAttendanceByClassAndDate = async (req: Request, res: Response) =
 export const getAttendanceHistoryByClass = async (req: Request, res: Response) => {
   try {
     const classId = getParamValue(req.params.classId);
-    const history = await getAttendanceHistoryByClassService(classId);
+    const result = await getAttendanceHistoryByClassService(classId, req.query);
 
     res.status(200).json({
       message: "Attendance history retrieved successfully",
-      data: history,
+      data: result.data,
+      pagination: result.pagination,
     });
   } catch (error) {
     console.log("Error:", error);

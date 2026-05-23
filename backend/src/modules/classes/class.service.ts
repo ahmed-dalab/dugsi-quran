@@ -1,5 +1,12 @@
 import { isValidObjectId } from "mongoose";
+import type { Request } from "express";
 import { ClassModel, type IClass } from "./class.model";
+import {
+  buildSearchFilter,
+  getPaginateOptions,
+  parsePaginationQuery,
+  toPaginatedList,
+} from "../../utils/pagination";
 
 type CreateClassPayload = IClass;
 type UpdateClassPayload = Partial<IClass>;
@@ -22,9 +29,21 @@ export const createClassService = async (payload: CreateClassPayload) => {
   return sanitizeClass(classItem);
 };
 
-export const getClassesService = async () => {
-  const classes = await ClassModel.find().sort({ levelOrder: 1 }).lean();
-  return classes.map((classItem) => sanitizeClass(classItem));
+export const getClassesService = async (query: Request["query"]) => {
+  const pagination = parsePaginationQuery(query, { sortBy: "levelOrder", sortOrder: "asc" });
+  const filter: Record<string, unknown> = {
+    ...buildSearchFilter(pagination.search, ["name"]),
+  };
+
+  if (query.isActive === "true") {
+    filter.isActive = true;
+  } else if (query.isActive === "false") {
+    filter.isActive = false;
+  }
+
+  const result = await ClassModel.paginate(filter, getPaginateOptions(pagination));
+
+  return toPaginatedList(result, sanitizeClass);
 };
 
 export const getClassByIdService = async (id: string) => {

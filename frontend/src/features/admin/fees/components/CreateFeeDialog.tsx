@@ -5,6 +5,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 
 import { useGetStudentsQuery } from "@/features/admin/students/api/studentApi";
+import { LIST_ALL_PARAMS } from "@/lib/pagination";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -36,7 +37,7 @@ const now = new Date();
 export default function CreateFeeDialog({ triggerClassName }: CreateFeeDialogProps) {
   const [open, setOpen] = useState(false);
   const [createFee, { isLoading }] = useCreateFeeMutation();
-  const { data: studentsData } = useGetStudentsQuery();
+  const { data: studentsData } = useGetStudentsQuery({ ...LIST_ALL_PARAMS, status: "active" });
 
   const form = useForm<CreateFeeFormValues>({
     resolver: zodResolver(createFeeSchema),

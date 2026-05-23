@@ -1,4 +1,6 @@
 import { Schema, model, type Types } from "mongoose";
+import mongoosePaginate from "mongoose-paginate-v2";
+import type { PaginateModel } from "mongoose";
 
 export type AttendanceStatus = "present" | "absent" | "late" | "excused";
 
@@ -64,5 +66,8 @@ const attendanceSchema = new Schema<IAttendance>(
 
 attendanceSchema.index({ classId: 1, date: 1 }, { unique: true });
 attendanceSchema.index({ date: -1 });
+attendanceSchema.plugin(mongoosePaginate);
 
-export const AttendanceModel = model<IAttendance>("Attendance", attendanceSchema);
+export interface AttendanceModelType extends PaginateModel<IAttendance> {}
+
+export const AttendanceModel = model<IAttendance, AttendanceModelType>("Attendance", attendanceSchema);

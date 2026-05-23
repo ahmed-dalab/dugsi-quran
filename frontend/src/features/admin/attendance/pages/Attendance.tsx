@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import { useAppSelector } from "@/app/hooks";
@@ -14,6 +14,10 @@ import {
 } from "@/components/ui/select";
 import { useGetClassesQuery } from "@/features/admin/classes/api/classApi";
 import { useGetStudentsQuery } from "@/features/admin/students/api/studentApi";
+import ListSearch from "@/components/common/ListSearch";
+import TablePagination from "@/components/common/TablePagination";
+import { useListQueryState } from "@/hooks/useListQueryState";
+import { LIST_ALL_PARAMS } from "@/lib/pagination";
 import type { Student } from "@/features/admin/students/types/student.types";
 import {
   useGetAttendanceHistoryByClassQuery,
@@ -22,9 +26,6 @@ import {
 } from "../api/attendanceApi";
 
 const today = new Date().toISOString().slice(0, 10);
-
-const getStudentClassId = (student: Student) =>
-  typeof student.classId === "string" ? student.classId : student.classId._id;
 
 const getDisplayName = (student: Student) => student.fullName;
 
@@ -35,29 +36,38 @@ export default function AttendancePage() {
   const [checkedByStudentId, setCheckedByStudentId] = useState<Record<string, boolean>>({});
   const [showAttendanceForm, setShowAttendanceForm] = useState(false);
 
-  const { data: classesData, isLoading: isClassesLoading } = useGetClassesQuery(undefined, {
+  const {
+    search: historySearch,
+    setSearch: setHistorySearch,
+    params: historyParams,
+    setPage: setHistoryPage,
+  } = useListQueryState();
+
+  const { data: classesData, isLoading: isClassesLoading } = useGetClassesQuery(LIST_ALL_PARAMS, {
     skip: isBootstrapping || !accessToken,
   });
-  const { data: studentsData, isLoading: isStudentsLoading } = useGetStudentsQuery(undefined, {
-    skip: isBootstrapping || !accessToken,
-  });
-  const { data: historyData, isLoading: isHistoryLoading } = useGetAttendanceHistoryByClassQuery(
-    selectedClassId,
-    { skip: !selectedClassId || isBootstrapping || !accessToken }
+
+  const studentListParams = selectedClassId
+    ? { ...LIST_ALL_PARAMS, classId: selectedClassId, status: "active" as const }
+    : undefined;
+
+  const { data: studentsData, isLoading: isStudentsLoading } = useGetStudentsQuery(
+    studentListParams!,
+    {
+      skip: isBootstrapping || !accessToken || !studentListParams,
+    }
   );
+
+  const { data: historyData, isLoading: isHistoryLoading, isFetching: isHistoryFetching } =
+    useGetAttendanceHistoryByClassQuery(
+      { classId: selectedClassId, ...historyParams },
+      { skip: !selectedClassId || isBootstrapping || !accessToken }
+    );
   const [fetchAttendanceByDate, { isFetching: isLoadingExistingAttendance }] =
     useLazyGetAttendanceByClassAndDateQuery();
   const [takeAttendance, { isLoading: isSavingAttendance }] = useTakeAttendanceMutation();
 
-  const classStudents = useMemo(() => {
-    if (!studentsData?.data || !selectedClassId) {
-      return [];
-    }
-
-    return studentsData.data.filter(
-      (student) => student.status === "active" && getStudentClassId(student) === selectedClassId
-    );
-  }, [studentsData?.data, selectedClassId]);
+  const classStudents = studentsData?.data ?? [];
 
   useEffect(() => {
     if (!selectedClassId || !selectedDate || classStudents.length === 0) {
@@ -237,6 +247,13 @@ export default function AttendancePage() {
       {selectedClassId ? (
         <div className="rounded-lg border bg-white p-4 sm:p-6 space-y-4">
           <h2 className="text-lg font-semibold">Attendance History</h2>
+
+          <ListSearch
+            value={historySearch}
+            onChange={setHistorySearch}
+            placeholder="Search by date..."
+          />
+
           {isHistoryLoading ? (
             <div>Loading attendance history...</div>
           ) : !historyData?.data?.length ? (
@@ -282,6 +299,12 @@ export default function AttendancePage() {
               </table>
             </div>
           )}
+
+          <TablePagination
+            pagination={historyData?.pagination}
+            onPageChange={setHistoryPage}
+            isLoading={isHistoryFetching}
+          />
         </div>
       ) : null}
     </div>

@@ -1,4 +1,6 @@
 import { Schema, model, type Types } from "mongoose";
+import mongoosePaginate from "mongoose-paginate-v2";
+import type { PaginateModel } from "mongoose";
 
 export type TeacherGender = "male" | "female";
 export type TeacherStatus = "active" | "inactive";
@@ -106,8 +108,10 @@ const teacherSchema = new Schema<ITeacher>(
   }
 );
 
-// Index for better performance
 teacherSchema.index({ userId: 1 });
 teacherSchema.index({ status: 1 });
+teacherSchema.plugin(mongoosePaginate);
 
-export const TeacherModel = model<ITeacher>("Teacher", teacherSchema);
+export interface TeacherModelType extends PaginateModel<ITeacher> {}
+
+export const TeacherModel = model<ITeacher, TeacherModelType>("Teacher", teacherSchema);

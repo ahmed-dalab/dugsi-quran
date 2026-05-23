@@ -1,4 +1,6 @@
 import { baseApi } from "@/app/baseApi";
+import { toListQueryParams, type ListQueryParams } from "@/lib/pagination";
+import type { PaginatedResponse } from "@/types/pagination";
 import type { TeacherClassAssignment } from "../types/assignment.types";
 
 export interface CreateAssignmentRequest {
@@ -18,18 +20,27 @@ export interface AssignmentResponse {
   data: TeacherClassAssignment;
 }
 
-export interface AssignmentsResponse {
-  message: string;
-  data: TeacherClassAssignment[];
-}
+export type AssignmentsResponse = PaginatedResponse<TeacherClassAssignment>;
+
+export type AssignmentsListParams = ListQueryParams & {
+  status?: string;
+};
+
+export type AssignmentsByTeacherParams = ListQueryParams & {
+  teacherId: string;
+};
+
+export type AssignmentsByClassParams = ListQueryParams & {
+  classId: string;
+};
 
 export const assignmentApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
-    getAssignments: builder.query<AssignmentsResponse, { status?: string }>({
-      query: ({ status }) => ({
+    getAssignments: builder.query<AssignmentsResponse, AssignmentsListParams | void>({
+      query: (params) => ({
         url: "/assignments/",
-        params: status ? { status } : undefined,
         method: "GET",
+        params: toListQueryParams(params ?? undefined),
       }),
       providesTags: ["Assignments"],
     }),
@@ -40,10 +51,11 @@ export const assignmentApi = baseApi.injectEndpoints({
       }),
       providesTags: ["Assignments"],
     }),
-    getAssignmentsByTeacher: builder.query<AssignmentsResponse, string>({
-      query: (teacherId) => ({
+    getAssignmentsByTeacher: builder.query<AssignmentsResponse, AssignmentsByTeacherParams>({
+      query: ({ teacherId, ...params }) => ({
         url: `/assignments/teacher/${teacherId}`,
         method: "GET",
+        params: toListQueryParams(params),
       }),
       providesTags: ["Assignments"],
     }),
@@ -54,10 +66,11 @@ export const assignmentApi = baseApi.injectEndpoints({
       }),
       providesTags: ["Assignments"],
     }),
-    getAssignmentsByClass: builder.query<AssignmentsResponse, string>({
-      query: (classId) => ({
+    getAssignmentsByClass: builder.query<AssignmentsResponse, AssignmentsByClassParams>({
+      query: ({ classId, ...params }) => ({
         url: `/assignments/class/${classId}`,
         method: "GET",
+        params: toListQueryParams(params),
       }),
       providesTags: ["Assignments"],
     }),

@@ -1,12 +1,16 @@
 import { useAppSelector } from "@/app/hooks";
+import ListSearch from "@/components/common/ListSearch";
+import TablePagination from "@/components/common/TablePagination";
+import { useListQueryState } from "@/hooks/useListQueryState";
 import { useGetUsersQuery } from "../api/userApi";
 import UsersTable from "../components/UsersTable";
 import CreateUserDialog from "../components/CreateUserDialog";
 
 export default function Users() {
   const { accessToken, isBootstrapping } = useAppSelector((state) => state.auth);
+  const { search, setSearch, params, setPage } = useListQueryState();
 
-  const { data, isLoading, isError } = useGetUsersQuery(undefined, {
+  const { data, isLoading, isError, isFetching } = useGetUsersQuery(params, {
     skip: isBootstrapping || !accessToken,
   });
 
@@ -35,11 +39,23 @@ export default function Users() {
         <CreateUserDialog />
       </div>
 
+      <ListSearch
+        value={search}
+        onChange={setSearch}
+        placeholder="Search by name or email..."
+      />
+
       {!data || data.data.length === 0 ? (
         <div>No users found.</div>
       ) : (
         <UsersTable users={data.data} />
       )}
+
+      <TablePagination
+        pagination={data?.pagination}
+        onPageChange={setPage}
+        isLoading={isFetching}
+      />
     </div>
   );
 }

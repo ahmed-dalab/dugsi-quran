@@ -50,12 +50,12 @@ export const createAssignment = async (req: Request, res: Response) => {
 
 export const getAssignments = async (req: Request, res: Response) => {
   try {
-    const { status } = req.query;
-    const assignments = await getAssignmentsService(status as string);
+    const result = await getAssignmentsService(req.query);
 
     res.status(200).json({
       message: "Assignments retrieved successfully",
-      data: assignments,
+      data: result.data,
+      pagination: result.pagination,
     });
   } catch (error) {
     console.log("Error:", error);
@@ -90,11 +90,12 @@ export const getAssignment = async (req: Request, res: Response) => {
 
 export const getAssignmentsByTeacher = async (req: Request, res: Response) => {
   try {
-    const assignments = await getAssignmentsByTeacherService(getIdParam(req.params.teacherId));
+    const result = await getAssignmentsByTeacherService(getIdParam(req.params.teacherId), req.query);
 
     res.status(200).json({
       message: "Teacher assignments retrieved successfully",
-      data: assignments,
+      data: result.data,
+      pagination: result.pagination,
     });
   } catch (error) {
     console.log("Error:", error);
@@ -106,11 +107,12 @@ export const getAssignmentsByTeacher = async (req: Request, res: Response) => {
 
 export const getAssignmentsByClass = async (req: Request, res: Response) => {
   try {
-    const assignments = await getAssignmentsByClassService(getIdParam(req.params.classId));
+    const result = await getAssignmentsByClassService(getIdParam(req.params.classId), req.query);
 
     res.status(200).json({
       message: "Class assignments retrieved successfully",
-      data: assignments,
+      data: result.data,
+      pagination: result.pagination,
     });
   } catch (error) {
     console.log("Error:", error);

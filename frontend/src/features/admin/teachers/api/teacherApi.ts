@@ -1,4 +1,6 @@
 import { baseApi } from "@/app/baseApi";
+import { toListQueryParams, type ListQueryParams } from "@/lib/pagination";
+import type { PaginatedResponse } from "@/types/pagination";
 import type { Teacher } from "../types/teacher.types";
 
 export interface CreateTeacherRequest {
@@ -52,17 +54,15 @@ export interface TeacherResponse {
   data: Teacher;
 }
 
-export interface TeachersResponse {
-  message: string;
-  data: Teacher[];
-}
+export type TeachersResponse = PaginatedResponse<Teacher>;
 
 export const teacherApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
-    getTeachers: builder.query<TeachersResponse, void>({
-      query: () => ({
+    getTeachers: builder.query<TeachersResponse, ListQueryParams | void>({
+      query: (params) => ({
         url: "/teachers/",
         method: "GET",
+        params: toListQueryParams(params ?? undefined),
       }),
       providesTags: ["Teachers"],
     }),

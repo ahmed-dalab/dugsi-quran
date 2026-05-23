@@ -1,7 +1,15 @@
 import { isValidObjectId } from "mongoose";
+import type { Request } from "express";
 import { AssignmentModel, type ITeacherClassAssignment } from "./assignment.model";
 import { TeacherModel } from "../teachers/teacher.model";
-import { User } from "../users/user.model";
+import {
+  buildSearchFilter,
+  emptyPaginatedList,
+  getPaginateOptions,
+  getQueryString,
+  parsePaginationQuery,
+  toPaginatedList,
+} from "../../utils/pagination";
 
 export interface CreateAssignmentPayload {
   teacherId: string;
@@ -79,17 +87,37 @@ export const createAssignmentService = async (payload: CreateAssignmentPayload) 
   return sanitizeAssignment(populatedAssignment);
 };
 
-export const getAssignmentsService = async (status?: string) => {
-  const filter = status ? { status } : {};
-  
-  const assignments = await AssignmentModel.find(filter)
-    .populate("teacherId", "userId")
-    .populate("classId", "name levelOrder")
-    .populate("assignedBy", "name email")
-    .sort({ assignedDate: -1 })
-    .lean();
+const assignmentPopulateOptions = [
+  { path: "teacherId", select: "userId" },
+  { path: "classId", select: "name levelOrder" },
+  { path: "assignedBy", select: "name email" },
+];
 
-  return assignments.map((assignment) => sanitizeAssignment(assignment));
+const buildAssignmentListFilter = (query: Request["query"]) => {
+  const pagination = parsePaginationQuery(query, { sortBy: "assignedDate", sortOrder: "desc" });
+  const filter: Record<string, unknown> = {
+    ...buildSearchFilter(pagination.search, ["notes", "status"]),
+  };
+
+  const status = getQueryString(query, "status");
+  if (status === "active" || status === "inactive" || status === "ended") {
+    filter.status = status;
+  }
+
+  return { pagination, filter };
+};
+
+export const getAssignmentsService = async (query: Request["query"]) => {
+  const { pagination, filter } = buildAssignmentListFilter(query);
+  const result = await AssignmentModel.paginate(
+    filter,
+    getPaginateOptions(pagination, {
+      sort: { assignedDate: -1 },
+      populate: assignmentPopulateOptions,
+    })
+  );
+
+  return toPaginatedList(result, sanitizeAssignment);
 };
 
 export const getAssignmentByIdService = async (id: string) => {
@@ -110,32 +138,44 @@ export const getAssignmentByIdService = async (id: string) => {
   return sanitizeAssignment(assignment);
 };
 
-export const getAssignmentsByTeacherService = async (teacherId: string) => {
+export const getAssignmentsByTeacherService = async (teacherId: string, query: Request["query"]) => {
   if (!isValidObjectId(teacherId)) {
-    return [];
+    return emptyPaginatedList();
   }
 
-  const assignments = await AssignmentModel.find({ teacherId })
-    .populate("classId", "name levelOrder")
-    .populate("assignedBy", "name email")
-    .sort({ assignedDate: -1 })
-    .lean();
+  const { pagination, filter } = buildAssignmentListFilter(query);
+  const result = await AssignmentModel.paginate(
+    { ...filter, teacherId },
+    getPaginateOptions(pagination, {
+      sort: { assignedDate: -1 },
+      populate: [
+        { path: "classId", select: "name levelOrder" },
+        { path: "assignedBy", select: "name email" },
+      ],
+    })
+  );
 
-  return assignments.map((assignment) => sanitizeAssignment(assignment));
+  return toPaginatedList(result, sanitizeAssignment);
 };
 
-export const getAssignmentsByClassService = async (classId: string) => {
+export const getAssignmentsByClassService = async (classId: string, query: Request["query"]) => {
   if (!isValidObjectId(classId)) {
-    return [];
+    return emptyPaginatedList();
   }
 
-  const assignments = await AssignmentModel.find({ classId })
-    .populate("teacherId", "userId")
-    .populate("assignedBy", "name email")
-    .sort({ assignedDate: -1 })
-    .lean();
+  const { pagination, filter } = buildAssignmentListFilter(query);
+  const result = await AssignmentModel.paginate(
+    { ...filter, classId },
+    getPaginateOptions(pagination, {
+      sort: { assignedDate: -1 },
+      populate: [
+        { path: "teacherId", select: "userId" },
+        { path: "assignedBy", select: "name email" },
+      ],
+    })
+  );
 
-  return assignments.map((assignment) => sanitizeAssignment(assignment));
+  return toPaginatedList(result, sanitizeAssignment);
 };
 
 export const updateAssignmentService = async (

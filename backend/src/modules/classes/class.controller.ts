@@ -48,13 +48,14 @@ export const createClass = async (req: Request, res: Response) => {
   }
 };
 
-export const getClasses = async (_req: Request, res: Response) => {
+export const getClasses = async (req: Request, res: Response) => {
   try {
-    const classes = await getClassesService();
+    const result = await getClassesService(req.query);
 
     res.status(200).json({
       message: "Classes retrieved successfully",
-      data: classes,
+      data: result.data,
+      pagination: result.pagination,
     });
   } catch (error) {
     console.log("Error:", error);

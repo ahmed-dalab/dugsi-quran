@@ -1,4 +1,6 @@
 import { Schema, model, type Types } from "mongoose";
+import mongoosePaginate from "mongoose-paginate-v2";
+import type { PaginateModel } from "mongoose";
 
 export type AssignmentStatus = "active" | "inactive" | "ended";
 
@@ -8,7 +10,7 @@ export interface ITeacherClassAssignment {
   status: AssignmentStatus;
   assignedDate: Date;
   endDate?: Date | null;
-  assignedBy: Types.ObjectId; // Admin who made the assignment
+  assignedBy: Types.ObjectId;
   notes?: string;
 }
 
@@ -54,15 +56,18 @@ const assignmentSchema = new Schema<ITeacherClassAssignment>(
   }
 );
 
-// Indexes for better performance
 assignmentSchema.index({ teacherId: 1, status: 1 });
 assignmentSchema.index({ classId: 1, status: 1 });
 assignmentSchema.index({ assignedDate: -1 });
-
-// Ensure a teacher can only have one active assignment to a specific class
 assignmentSchema.index(
   { teacherId: 1, classId: 1, status: 1 },
   { unique: true, partialFilterExpression: { status: "active" } }
 );
+assignmentSchema.plugin(mongoosePaginate);
 
-export const AssignmentModel = model<ITeacherClassAssignment>("Assignment", assignmentSchema);
+export interface AssignmentModelType extends PaginateModel<ITeacherClassAssignment> {}
+
+export const AssignmentModel = model<ITeacherClassAssignment, AssignmentModelType>(
+  "Assignment",
+  assignmentSchema
+);

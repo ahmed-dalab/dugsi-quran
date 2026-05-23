@@ -1,4 +1,6 @@
 import { Schema, model, type Types } from "mongoose";
+import mongoosePaginate from "mongoose-paginate-v2";
+import type { PaginateModel } from "mongoose";
 
 export type StudentGender = "male" | "female";
 export type StudentStatus = "active" | "inactive";
@@ -64,4 +66,8 @@ const studentSchema = new Schema<IStudent>(
   }
 );
 
-export const StudentModel = model<IStudent>("Student", studentSchema);
+studentSchema.plugin(mongoosePaginate);
+
+export interface StudentModelType extends PaginateModel<IStudent> {}
+
+export const StudentModel = model<IStudent, StudentModelType>("Student", studentSchema);

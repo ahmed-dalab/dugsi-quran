@@ -1,4 +1,6 @@
 import { Schema, model, type Types } from "mongoose";
+import mongoosePaginate from "mongoose-paginate-v2";
+import type { PaginateModel } from "mongoose";
 
 export interface IClass {
   name: string;
@@ -43,4 +45,8 @@ const classSchema = new Schema<IClass>(
   }
 );
 
-export const ClassModel = model<IClass>("Class", classSchema);
+classSchema.plugin(mongoosePaginate);
+
+export interface ClassModelType extends PaginateModel<IClass> {}
+
+export const ClassModel = model<IClass, ClassModelType>("Class", classSchema);

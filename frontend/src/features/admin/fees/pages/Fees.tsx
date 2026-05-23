@@ -1,12 +1,16 @@
 import { useAppSelector } from "@/app/hooks";
+import ListSearch from "@/components/common/ListSearch";
+import TablePagination from "@/components/common/TablePagination";
+import { useListQueryState } from "@/hooks/useListQueryState";
 import { useGetFeesQuery } from "../api/feeApi";
 import CreateFeeDialog from "../components/CreateFeeDialog";
 import FeesTable from "../components/FeesTable";
 
 export default function Fees() {
   const { accessToken, isBootstrapping } = useAppSelector((state) => state.auth);
+  const { search, setSearch, params, setPage } = useListQueryState();
 
-  const { data, isLoading, isError } = useGetFeesQuery(undefined, {
+  const { data, isLoading, isError, isFetching } = useGetFeesQuery(params, {
     skip: isBootstrapping || !accessToken,
   });
 
@@ -35,7 +39,15 @@ export default function Fees() {
         <CreateFeeDialog />
       </div>
 
+      <ListSearch value={search} onChange={setSearch} placeholder="Search fees..." />
+
       {!data || data.data.length === 0 ? <div>No fee records found.</div> : <FeesTable fees={data.data} />}
+
+      <TablePagination
+        pagination={data?.pagination}
+        onPageChange={setPage}
+        isLoading={isFetching}
+      />
     </div>
   );
 }

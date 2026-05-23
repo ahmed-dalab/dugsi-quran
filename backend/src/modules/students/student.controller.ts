@@ -39,13 +39,14 @@ export const createStudent = async (req: Request, res: Response) => {
   }
 };
 
-export const getStudents = async (_req: Request, res: Response) => {
+export const getStudents = async (req: Request, res: Response) => {
   try {
-    const students = await getStudentsService();
+    const result = await getStudentsService(req.query);
 
     res.status(200).json({
       message: "Students retrieved successfully",
-      data: students,
+      data: result.data,
+      pagination: result.pagination,
     });
   } catch (error) {
     console.log("Error:", error);

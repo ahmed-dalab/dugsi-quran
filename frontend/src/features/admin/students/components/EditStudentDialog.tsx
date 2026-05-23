@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import { useGetClassesQuery } from "@/features/admin/classes/api/classApi";
+import { LIST_ALL_PARAMS } from "@/lib/pagination";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -46,7 +47,7 @@ export default function EditStudentDialog({
 }: EditStudentDialogProps) {
   const [open, setOpen] = useState(false);
   const [updateStudent, { isLoading }] = useUpdateStudentMutation();
-  const { data: classesData } = useGetClassesQuery();
+  const { data: classesData } = useGetClassesQuery(LIST_ALL_PARAMS);
 
   const classId =
     typeof student.classId === "string" ? student.classId : student.classId._id;

@@ -6,6 +6,7 @@ import { toast } from "sonner";
 
 import { useGetClassesQuery } from "@/features/admin/classes/api/classApi";
 import { useGetTeachersQuery } from "@/features/admin/teachers/api/teacherApi";
+import { LIST_ALL_PARAMS } from "@/lib/pagination";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
@@ -50,8 +51,8 @@ export default function AssignClassDialog({
 }: AssignClassDialogProps) {
   const [open, setOpen] = useState(false);
   const [createAssignment, { isLoading }] = useCreateAssignmentMutation();
-  const { data: teachersData } = useGetTeachersQuery();
-  const { data: classesData } = useGetClassesQuery();
+  const { data: teachersData } = useGetTeachersQuery({ ...LIST_ALL_PARAMS, status: "active" });
+  const { data: classesData } = useGetClassesQuery({ ...LIST_ALL_PARAMS, isActive: true });
 
   const form = useForm<CreateAssignmentFormValues>({
     resolver: zodResolver(createAssignmentSchema),

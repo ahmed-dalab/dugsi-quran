@@ -1,5 +1,6 @@
 import { History } from "lucide-react";
 import { useState } from "react";
+import { LIST_ALL_PARAMS } from "@/lib/pagination";
 import { useGetAssignmentsByTeacherQuery } from "../api/assignmentApi";
 import type { TeacherClassAssignment } from "../types/assignment.types";
 import { Button } from "@/components/ui/button";
@@ -32,9 +33,10 @@ interface AssignmentHistoryContentProps {
 }
 
 export function AssignmentHistoryContent({ teacherId }: AssignmentHistoryContentProps) {
-  const { data: assignmentsData, isLoading } = useGetAssignmentsByTeacherQuery(teacherId, {
-    skip: !teacherId,
-  });
+  const { data: assignmentsData, isLoading } = useGetAssignmentsByTeacherQuery(
+    { teacherId, ...LIST_ALL_PARAMS },
+    { skip: !teacherId }
+  );
 
   const getStatusBadge = (status: string) => {
     const variants = {

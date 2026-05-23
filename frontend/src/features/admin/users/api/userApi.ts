@@ -1,4 +1,6 @@
 import { baseApi } from "@/app/baseApi";
+import { toListQueryParams, type ListQueryParams } from "@/lib/pagination";
+import type { PaginatedResponse } from "@/types/pagination";
 import type { User } from "../types/user.types";
 
 export interface CreateUserRequest {
@@ -21,17 +23,15 @@ export interface UserResponse {
   data: User;
 }
 
-export interface UsersResponse {
-  message: string;
-  data: User[];
-}
+export type UsersResponse = PaginatedResponse<User>;
 
 export const userApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
-    getUsers: builder.query<UsersResponse, void>({
-      query: () => ({
+    getUsers: builder.query<UsersResponse, ListQueryParams | void>({
+      query: (params) => ({
         url: "/users/",
         method: "GET",
+        params: toListQueryParams(params ?? undefined),
       }),
       providesTags: ["Users"],
     }),

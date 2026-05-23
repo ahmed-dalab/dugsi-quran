@@ -5,6 +5,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 
 import { useGetClassesQuery } from "@/features/admin/classes/api/classApi";
+import { LIST_ALL_PARAMS } from "@/lib/pagination";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -46,7 +47,7 @@ export default function CreateStudentDialog({
 }: CreateStudentDialogProps) {
   const [open, setOpen] = useState(false);
   const [createStudent, { isLoading }] = useCreateStudentMutation();
-  const { data: classesData } = useGetClassesQuery();
+  const { data: classesData } = useGetClassesQuery(LIST_ALL_PARAMS);
 
   const form = useForm<CreateStudentFormValues>({
     resolver: zodResolver(createStudentSchema),

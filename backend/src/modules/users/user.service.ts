@@ -1,7 +1,15 @@
 import { isValidObjectId } from "mongoose";
+import type { Request } from "express";
 import { IUser, User } from "./user.model";
-import bcrypt from "bcryptjs"
+import bcrypt from "bcryptjs";
 import { env } from "../../config/env";
+import {
+  buildSearchFilter,
+  getPaginateOptions,
+  getQueryString,
+  parsePaginationQuery,
+  toPaginatedList,
+} from "../../utils/pagination";
 type CreateUserPayload = IUser;
 type UpdateUserPayload = Partial<IUser>;
 
@@ -25,10 +33,31 @@ export const createUserService = async (payload: CreateUserPayload) => {
   return sanitizeUser(user);
 };
 
-export const getUsersService = async () => {
-  const users = await User.find().lean();
+const buildUserListFilter = (query: Request["query"]) => {
+  const pagination = parsePaginationQuery(query, { sortBy: "createdAt", sortOrder: "desc" });
+  const filter: Record<string, unknown> = {
+    ...buildSearchFilter(pagination.search, ["name", "email"]),
+  };
 
-  return users.map((user) => sanitizeUser(user));
+  const role = getQueryString(query, "role");
+  if (role === "admin" || role === "teacher") {
+    filter.role = role;
+  }
+
+  if (query.isActive === "true") {
+    filter.isActive = true;
+  } else if (query.isActive === "false") {
+    filter.isActive = false;
+  }
+
+  return { pagination, filter };
+};
+
+export const getUsersService = async (query: Request["query"]) => {
+  const { pagination, filter } = buildUserListFilter(query);
+  const result = await User.paginate(filter, getPaginateOptions(pagination, { select: "-password" }));
+
+  return toPaginatedList(result, sanitizeUser);
 };
 
 export const getUserByIdService = async (id: string) => {

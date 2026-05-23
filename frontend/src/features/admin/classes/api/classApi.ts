@@ -1,4 +1,6 @@
 import { baseApi } from "@/app/baseApi";
+import { toListQueryParams, type ListQueryParams } from "@/lib/pagination";
+import type { PaginatedResponse } from "@/types/pagination";
 import type { ClassItem } from "../types/class.types";
 
 export interface CreateClassRequest {
@@ -22,17 +24,15 @@ export interface ClassResponse {
   data: ClassItem;
 }
 
-export interface ClassesResponse {
-  message: string;
-  data: ClassItem[];
-}
+export type ClassesResponse = PaginatedResponse<ClassItem>;
 
 export const classApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
-    getClasses: builder.query<ClassesResponse, void>({
-      query: () => ({
+    getClasses: builder.query<ClassesResponse, ListQueryParams | void>({
+      query: (params) => ({
         url: "/classes/",
         method: "GET",
+        params: toListQueryParams(params ?? undefined),
       }),
       providesTags: ["Classes"],
     }),

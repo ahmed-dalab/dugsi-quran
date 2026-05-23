@@ -1,12 +1,16 @@
 import { useAppSelector } from "@/app/hooks";
+import ListSearch from "@/components/common/ListSearch";
+import TablePagination from "@/components/common/TablePagination";
+import { useListQueryState } from "@/hooks/useListQueryState";
 import { useGetStudentsQuery } from "../api/studentApi";
 import CreateStudentDialog from "../components/CreateStudentDialog";
 import StudentsTable from "../components/StudentsTable";
 
 export default function Students() {
   const { accessToken, isBootstrapping } = useAppSelector((state) => state.auth);
+  const { search, setSearch, params, setPage } = useListQueryState();
 
-  const { data, isLoading, isError } = useGetStudentsQuery(undefined, {
+  const { data, isLoading, isError, isFetching } = useGetStudentsQuery(params, {
     skip: isBootstrapping || !accessToken,
   });
 
@@ -35,11 +39,23 @@ export default function Students() {
         <CreateStudentDialog />
       </div>
 
+      <ListSearch
+        value={search}
+        onChange={setSearch}
+        placeholder="Search by name, guardian, or phone..."
+      />
+
       {!data || data.data.length === 0 ? (
         <div>No students found.</div>
       ) : (
         <StudentsTable students={data.data} />
       )}
+
+      <TablePagination
+        pagination={data?.pagination}
+        onPageChange={setPage}
+        isLoading={isFetching}
+      />
     </div>
   );
 }

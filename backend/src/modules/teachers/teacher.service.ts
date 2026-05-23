@@ -1,6 +1,14 @@
 import { isValidObjectId } from "mongoose";
+import type { Request } from "express";
 import { TeacherModel, type ITeacher } from "./teacher.model";
 import { User } from "../users/user.model";
+import {
+  escapeRegex,
+  getPaginateOptions,
+  getQueryString,
+  parsePaginationQuery,
+  toPaginatedList,
+} from "../../utils/pagination";
 
 type CreateTeacherPayload = Omit<ITeacher, "userId"> & { 
   name: string;
@@ -53,13 +61,54 @@ export const createTeacherService = async (payload: CreateTeacherPayload) => {
   return sanitizeTeacher(populatedTeacher);
 };
 
-export const getTeachersService = async () => {
-  const teachers = await TeacherModel.find()
-    .populate("userId", "name email role isActive")
-    .sort({ createdAt: -1 })
-    .lean();
+const buildTeacherListFilter = async (query: Request["query"]) => {
+  const pagination = parsePaginationQuery(query, { sortBy: "createdAt", sortOrder: "desc" });
+  const filter: Record<string, unknown> = {};
 
-  return teachers.map((teacher) => sanitizeTeacher(teacher));
+  if (pagination.search) {
+    const regex = new RegExp(escapeRegex(pagination.search), "i");
+    const matchingUsers = await User.find({
+      $or: [{ name: regex }, { email: regex }],
+    })
+      .select("_id")
+      .lean();
+    const userIds = matchingUsers.map((user) => user._id);
+
+    filter.$or = [
+      { phone: regex },
+      { employeeId: regex },
+      { qualification: regex },
+      { specialization: regex },
+      { experience: regex },
+      { "emergencyContact.name": regex },
+      { "emergencyContact.phone": regex },
+      ...(userIds.length > 0 ? [{ userId: { $in: userIds } }] : []),
+    ];
+  }
+
+  const status = getQueryString(query, "status");
+  if (status === "active" || status === "inactive") {
+    filter.status = status;
+  }
+
+  const employmentType = getQueryString(query, "employmentType");
+  if (employmentType === "full-time" || employmentType === "part-time" || employmentType === "volunteer") {
+    filter.employmentType = employmentType;
+  }
+
+  return { pagination, filter };
+};
+
+export const getTeachersService = async (query: Request["query"]) => {
+  const { pagination, filter } = await buildTeacherListFilter(query);
+  const result = await TeacherModel.paginate(
+    filter,
+    getPaginateOptions(pagination, {
+      populate: { path: "userId", select: "name email role isActive" },
+    })
+  );
+
+  return toPaginatedList(result, sanitizeTeacher);
 };
 
 export const getTeacherByIdService = async (id: string) => {

@@ -51,13 +51,14 @@ export const createUser = async (req: Request, res: Response) => {
 };
 
 // get users
-export const getUsers = async (_req: Request, res: Response) => {
+export const getUsers = async (req: Request, res: Response) => {
   try {
-    const users = await getUsersService();
+    const result = await getUsersService(req.query);
 
     res.status(200).json({
       message: "Users retrieved successfully",
-      data: users,
+      data: result.data,
+      pagination: result.pagination,
     });
   } catch (error) {
     console.log("Error:", error);

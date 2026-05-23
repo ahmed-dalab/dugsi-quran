@@ -39,13 +39,14 @@ export const createFee = async (req: Request, res: Response) => {
   }
 };
 
-export const getFees = async (_req: Request, res: Response) => {
+export const getFees = async (req: Request, res: Response) => {
   try {
-    const fees = await getFeesService();
+    const result = await getFeesService(req.query);
 
     res.status(200).json({
       message: "Fee payments retrieved successfully",
-      data: fees,
+      data: result.data,
+      pagination: result.pagination,
     });
   } catch (error) {
     console.log("Error:", error);

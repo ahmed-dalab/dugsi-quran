@@ -1,4 +1,6 @@
 import { baseApi } from "@/app/baseApi";
+import { toListQueryParams, type ListQueryParams } from "@/lib/pagination";
+import type { PaginatedResponse } from "@/types/pagination";
 import type { Attendance, AttendanceStatus } from "../types/attendance.types";
 
 export interface AttendanceInputRecord {
@@ -18,10 +20,11 @@ export interface AttendanceResponse {
   data: Attendance;
 }
 
-export interface AttendanceHistoryResponse {
-  message: string;
-  data: Attendance[];
-}
+export type AttendanceHistoryResponse = PaginatedResponse<Attendance>;
+
+export type AttendanceHistoryParams = ListQueryParams & {
+  classId: string;
+};
 
 export const attendanceApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
@@ -44,10 +47,11 @@ export const attendanceApi = baseApi.injectEndpoints({
       }),
       providesTags: ["Attendance"],
     }),
-    getAttendanceHistoryByClass: builder.query<AttendanceHistoryResponse, string>({
-      query: (classId) => ({
+    getAttendanceHistoryByClass: builder.query<AttendanceHistoryResponse, AttendanceHistoryParams>({
+      query: ({ classId, ...params }) => ({
         url: `/attendance/class/${classId}/history`,
         method: "GET",
+        params: toListQueryParams(params),
       }),
       providesTags: ["Attendance"],
     }),
