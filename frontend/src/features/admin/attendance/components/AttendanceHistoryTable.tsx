@@ -33,7 +33,7 @@ export default function AttendanceHistoryTable({ records }: AttendanceHistoryTab
                 <td className="px-4 py-3">{getAttendanceClassName(entry.classId)}</td>
                 <td className="px-4 py-3">{counters.present}</td>
                 <td className="px-4 py-3">{counters.absent}</td>
-                <td className="px-4 py-3">{getAttendanceTakenByName(entry.takenBy)}</td>
+                <td className="px-4 py-3">{getAttendanceTakenByName(entry.takenById)}</td>
               </tr>
             );
           })}

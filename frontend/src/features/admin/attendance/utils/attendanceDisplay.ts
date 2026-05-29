@@ -14,10 +14,25 @@ export function getAttendanceCounters(records: AttendanceRecord[]) {
   );
 }
 
-export function getAttendanceClassName(classId: Attendance["classId"]) {
-  return typeof classId === "string" ? "-" : classId.name;
+function getRelationDisplayName(
+  value: string | { name?: string } | null | undefined,
+  fallback = "-"
+) {
+  if (value == null) {
+    return fallback;
+  }
+
+  if (typeof value === "string") {
+    return value || fallback;
+  }
+
+  return value.name ?? fallback;
 }
 
-export function getAttendanceTakenByName(takenBy: Attendance["takenBy"]) {
-  return typeof takenBy === "string" ? "-" : takenBy.name;
+export function getAttendanceClassName(classId: Attendance["classId"]) {
+  return getRelationDisplayName(classId);
+}
+
+export function getAttendanceTakenByName(takenById: Attendance["takenById"]) {
+  return getRelationDisplayName(takenById);
 }

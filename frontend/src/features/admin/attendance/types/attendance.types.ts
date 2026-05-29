@@ -28,7 +28,7 @@ export interface Attendance {
   _id: string;
   classId: string | AttendanceClass;
   date: string;
-  takenBy: string | AttendanceTakenBy;
+  takenById: string | AttendanceTakenBy;
   records: AttendanceRecord[];
   createdAt?: string;
   updatedAt?: string;
