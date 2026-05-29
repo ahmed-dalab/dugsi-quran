@@ -1,7 +1,7 @@
 import type { Request, Response } from "express";
-import { assertFound } from "../../shared/errors/assertFound";
 import { asyncHandler } from "../../utils/asyncHandler";
 import { getIdParam } from "../../utils/getIdParam";
+import { respondCreated, respondPaginated, respondResource } from "../../utils/respond";
 import {
   createFeeService,
   deleteFeeService,
@@ -11,56 +11,35 @@ import {
 } from "./fee.service";
 
 export const createFee = asyncHandler(async (req: Request, res: Response) => {
-  const fee = assertFound(await createFeeService(req.body, req.user?.id), "Fee payment not found");
-
-  res.status(201).json({
-    message: "Fee payment created successfully",
-    data: fee,
-  });
+  const fee = await createFeeService(req.body, req.user?.id);
+  respondCreated(res, "Fee payment created successfully", fee);
 });
 
 export const getFees = asyncHandler(async (req: Request, res: Response) => {
   const result = await getFeesService(req.query);
-
-  res.status(200).json({
-    message: "Fee payments retrieved successfully",
-    data: result.data,
-    pagination: result.pagination,
-  });
+  respondPaginated(res, "Fee payments retrieved successfully", result);
 });
 
 export const getFee = asyncHandler(async (req: Request, res: Response) => {
-  const fee = assertFound(
-    await getFeeByIdService(getIdParam(req.params.id)),
-    "Fee payment not found"
-  );
-
-  res.status(200).json({
+  await respondResource(res, {
     message: "Fee payment retrieved successfully",
-    data: fee,
+    notFoundMessage: "Fee payment not found",
+    fetch: () => getFeeByIdService(getIdParam(req.params.id)),
   });
 });
 
 export const updateFee = asyncHandler(async (req: Request, res: Response) => {
-  const fee = assertFound(
-    await updateFeeService(getIdParam(req.params.id), req.body),
-    "Fee payment not found"
-  );
-
-  res.status(200).json({
+  await respondResource(res, {
     message: "Fee payment updated successfully",
-    data: fee,
+    notFoundMessage: "Fee payment not found",
+    fetch: () => updateFeeService(getIdParam(req.params.id), req.body),
   });
 });
 
 export const deleteFee = asyncHandler(async (req: Request, res: Response) => {
-  const fee = assertFound(
-    await deleteFeeService(getIdParam(req.params.id)),
-    "Fee payment not found"
-  );
-
-  res.status(200).json({
+  await respondResource(res, {
     message: "Fee payment deleted successfully",
-    data: fee,
+    notFoundMessage: "Fee payment not found",
+    fetch: () => deleteFeeService(getIdParam(req.params.id)),
   });
 });

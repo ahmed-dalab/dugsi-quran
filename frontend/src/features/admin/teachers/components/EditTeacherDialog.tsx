@@ -22,7 +22,7 @@ import {
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { AppSelect } from "@/components/ui/select";
-import { getApiErrorMessage, logDevError } from "@/lib/apiError";
+import { handleMutationError } from "@/lib/apiError";
 import { useUpdateTeacherMutation } from "../api/teacherApi";
 import type { Teacher } from "../types/teacher.types";
 import { editTeacherSchema, type EditTeacherFormValues } from "../schemas/editTeacherSchema";
@@ -69,8 +69,7 @@ export default function EditTeacherDialog({
       toast.success(`Teacher "${(updatedTeacher.data.userId as any).name}" updated successfully`);
       setOpen(false);
     } catch (error: unknown) {
-      logDevError("Update teacher failed", error);
-      toast.error(getApiErrorMessage(error, "Failed to update teacher"));
+      handleMutationError("Update teacher failed", error, "Failed to update teacher");
     }
   }
 

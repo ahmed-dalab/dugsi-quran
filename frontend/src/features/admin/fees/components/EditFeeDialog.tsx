@@ -4,7 +4,7 @@ import { Edit } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
-import { getApiErrorMessage, logDevError } from "@/lib/apiError";
+import { handleMutationError } from "@/lib/apiError";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -77,8 +77,7 @@ export default function EditFeeDialog({ fee, triggerClassName }: EditFeeDialogPr
       toast.success("Fee payment updated successfully");
       setOpen(false);
     } catch (error: unknown) {
-      logDevError("Update fee failed", error);
-      toast.error(getApiErrorMessage(error, "Failed to update fee payment"));
+      handleMutationError("Update fee failed", error, "Failed to update fee payment");
     }
   }
 

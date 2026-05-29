@@ -2,6 +2,14 @@ import type { Request } from "express";
 import { AppError } from "../../shared/errors/AppError";
 import { isValidId } from "../../utils/id";
 import { getQueryString, parsePaginationQuery } from "../../utils/pagination";
+import {
+  FEE_STATUSES,
+  parseEnumFilter,
+  parseMonthFilter,
+  parseOptionalUuidQuery,
+  parseYearFilter,
+} from "../../utils/queryFilters";
+import { getByIdOrNull, mapPaginatedResult, mutateOrNull } from "../../utils/serviceHelpers";
 import { mapFeeRecord } from "../../utils/mappers";
 import { classRepository } from "../classes/class.repository";
 import { studentRepository } from "../students/student.repository";
@@ -17,14 +25,8 @@ type CreateFeePayload = {
 type UpdateFeePayload = Partial<CreateFeePayload>;
 
 const deriveStatus = (amountDue: number, amountPaid: number): FeePaymentStatus => {
-  if (amountPaid <= 0) {
-    return "unpaid";
-  }
-
-  if (amountPaid >= amountDue) {
-    return "paid";
-  }
-
+  if (amountPaid <= 0) return "unpaid";
+  if (amountPaid >= amountDue) return "paid";
   return "partial";
 };
 
@@ -38,9 +40,7 @@ const normalizeCreatePayload = async (payload: CreateFeePayload) => {
     throw new AppError(404, "Student not found");
   }
 
-  const classId = student.classId;
-
-  const classItem = await classRepository.findById(classId);
+  const classItem = await classRepository.findById(student.classId);
   if (!classItem) {
     throw new AppError(404, "Class not found");
   }
@@ -62,7 +62,7 @@ const normalizeCreatePayload = async (payload: CreateFeePayload) => {
 
   return {
     studentId: payload.studentId,
-    classId,
+    classId: student.classId,
     month,
     year,
     amountDue,
@@ -94,34 +94,23 @@ export const createFeeService = async (payload: CreateFeePayload, userId?: strin
 
 export const getFeesService = async (query: Request["query"]) => {
   const pagination = parsePaginationQuery(query, { sortBy: "createdAt", sortOrder: "desc" });
-  const status = getQueryString(query, "status");
-  const classId = getQueryString(query, "classId");
-  const studentId = getQueryString(query, "studentId");
-  const month = Number.parseInt(String(query.month ?? ""), 10);
-  const year = Number.parseInt(String(query.year ?? ""), 10);
 
   const result = await feeRepository.findPaginated(pagination, {
-    status: status === "paid" || status === "partial" || status === "unpaid" ? status : undefined,
-    classId: classId && isValidId(classId) ? classId : undefined,
-    studentId: studentId && isValidId(studentId) ? studentId : undefined,
-    month: month >= 1 && month <= 12 ? month : undefined,
-    year: year >= 2000 ? year : undefined,
+    status: parseEnumFilter(getQueryString(query, "status"), FEE_STATUSES),
+    classId: parseOptionalUuidQuery(query, "classId"),
+    studentId: parseOptionalUuidQuery(query, "studentId"),
+    month: parseMonthFilter(query.month),
+    year: parseYearFilter(query.year),
   });
 
-  return {
-    data: result.docs.map(mapFeeRecord),
-    pagination: result.pagination,
-  };
+  return mapPaginatedResult(result, mapFeeRecord);
 };
 
-export const getFeeByIdService = async (id: string) => {
-  if (!isValidId(id)) {
-    return null;
-  }
-
-  const fee = await feeRepository.findById(id);
-  return fee ? mapFeeRecord(fee) : null;
-};
+export const getFeeByIdService = (id: string) =>
+  getByIdOrNull(id, async (validId) => {
+    const fee = await feeRepository.findById(validId);
+    return fee ? mapFeeRecord(fee) : null;
+  });
 
 export const updateFeeService = async (id: string, payload: UpdateFeePayload) => {
   if (!isValidId(id)) {
@@ -140,11 +129,9 @@ export const updateFeeService = async (id: string, payload: UpdateFeePayload) =>
     throw new AppError(400, "Amount paid cannot exceed the class monthly fee");
   }
 
-  const status = deriveStatus(amountDue, amountPaid);
-
   const updated = await feeRepository.update(id, {
     amountPaid,
-    status,
+    status: deriveStatus(amountDue, amountPaid),
     paymentDate: amountPaid > 0 ? payload.paymentDate ?? existing.paymentDate ?? new Date() : null,
     ...(payload.note !== undefined ? { note: payload.note?.trim() || null } : {}),
   });
@@ -152,15 +139,8 @@ export const updateFeeService = async (id: string, payload: UpdateFeePayload) =>
   return mapFeeRecord(updated);
 };
 
-export const deleteFeeService = async (id: string) => {
-  if (!isValidId(id)) {
-    return null;
-  }
-
-  try {
-    const fee = await feeRepository.delete(id);
+export const deleteFeeService = (id: string) =>
+  mutateOrNull(id, async (validId) => {
+    const fee = await feeRepository.delete(validId);
     return mapFeeRecord(fee);
-  } catch {
-    return null;
-  }
-};
+  });

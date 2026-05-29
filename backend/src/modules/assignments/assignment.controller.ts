@@ -1,7 +1,7 @@
 import type { Request, Response } from "express";
-import { assertFound } from "../../shared/errors/assertFound";
 import { asyncHandler } from "../../utils/asyncHandler";
 import { getIdParam } from "../../utils/getIdParam";
+import { respondCreated, respondOk, respondPaginated, respondResource } from "../../utils/respond";
 import {
   createAssignmentService,
   deleteAssignmentService,
@@ -9,8 +9,8 @@ import {
   getAssignmentsByClassService,
   getAssignmentsByTeacherService,
   getAssignmentsService,
-  updateAssignmentService,
   getCurrentAssignmentForTeacherService,
+  updateAssignmentService,
 } from "./assignment.service";
 
 export const createAssignment = asyncHandler(async (req: Request, res: Response) => {
@@ -18,32 +18,19 @@ export const createAssignment = asyncHandler(async (req: Request, res: Response)
     ...req.body,
     assignedBy: req.user!.id,
   });
-
-  res.status(201).json({
-    message: "Assignment created successfully",
-    data: assignment,
-  });
+  respondCreated(res, "Assignment created successfully", assignment);
 });
 
 export const getAssignments = asyncHandler(async (req: Request, res: Response) => {
   const result = await getAssignmentsService(req.query);
-
-  res.status(200).json({
-    message: "Assignments retrieved successfully",
-    data: result.data,
-    pagination: result.pagination,
-  });
+  respondPaginated(res, "Assignments retrieved successfully", result);
 });
 
 export const getAssignment = asyncHandler(async (req: Request, res: Response) => {
-  const assignment = assertFound(
-    await getAssignmentByIdService(getIdParam(req.params.id)),
-    "Assignment not found"
-  );
-
-  res.status(200).json({
+  await respondResource(res, {
     message: "Assignment retrieved successfully",
-    data: assignment,
+    notFoundMessage: "Assignment not found",
+    fetch: () => getAssignmentByIdService(getIdParam(req.params.id)),
   });
 });
 
@@ -52,22 +39,12 @@ export const getAssignmentsByTeacher = asyncHandler(async (req: Request, res: Re
     getIdParam(req.params.teacherId),
     req.query
   );
-
-  res.status(200).json({
-    message: "Teacher assignments retrieved successfully",
-    data: result.data,
-    pagination: result.pagination,
-  });
+  respondPaginated(res, "Teacher assignments retrieved successfully", result);
 });
 
 export const getAssignmentsByClass = asyncHandler(async (req: Request, res: Response) => {
   const result = await getAssignmentsByClassService(getIdParam(req.params.classId), req.query);
-
-  res.status(200).json({
-    message: "Class assignments retrieved successfully",
-    data: result.data,
-    pagination: result.pagination,
-  });
+  respondPaginated(res, "Class assignments retrieved successfully", result);
 });
 
 export const getCurrentAssignmentForTeacher = asyncHandler(async (req: Request, res: Response) => {
@@ -75,32 +52,25 @@ export const getCurrentAssignmentForTeacher = asyncHandler(async (req: Request, 
     getIdParam(req.params.teacherId)
   );
 
-  res.status(200).json({
-    message: assignment ? "Current assignment retrieved successfully" : "No active assignment found",
-    data: assignment,
-  });
+  respondOk(
+    res,
+    assignment ? "Current assignment retrieved successfully" : "No active assignment found",
+    assignment
+  );
 });
 
 export const updateAssignment = asyncHandler(async (req: Request, res: Response) => {
-  const assignment = assertFound(
-    await updateAssignmentService(getIdParam(req.params.id), req.body),
-    "Assignment not found"
-  );
-
-  res.status(200).json({
+  await respondResource(res, {
     message: "Assignment updated successfully",
-    data: assignment,
+    notFoundMessage: "Assignment not found",
+    fetch: () => updateAssignmentService(getIdParam(req.params.id), req.body),
   });
 });
 
 export const deleteAssignment = asyncHandler(async (req: Request, res: Response) => {
-  const assignment = assertFound(
-    await deleteAssignmentService(getIdParam(req.params.id)),
-    "Assignment not found"
-  );
-
-  res.status(200).json({
+  await respondResource(res, {
     message: "Assignment deleted successfully",
-    data: assignment,
+    notFoundMessage: "Assignment not found",
+    fetch: () => deleteAssignmentService(getIdParam(req.params.id)),
   });
 });

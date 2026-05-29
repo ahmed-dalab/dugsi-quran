@@ -1,20 +1,28 @@
-import { useAppSelector } from "@/app/hooks";
 import { DashboardSkeleton } from "@/components/skeletons";
 import { ErrorMessage } from "@/components/ui/loading-message";
 import { PageHeader } from "@/components/ui/page-header";
-import { chartColors, getChartColor } from "@/design-system/tokens";
+import { dashboardChartColors } from "@/design-system/tokens";
+import { useAuthQuerySkip } from "@/hooks/useAuthQuerySkip";
+import {
+  Activity,
+  BookOpen,
+  Calendar,
+  GraduationCap,
+  UserCheck,
+  Users,
+} from "lucide-react";
 import { useGetDashboardStatsQuery } from "./dashboard/api/dashboardApi";
+import {
+  DashboardCategoricalBarChart,
+  DashboardGroupedBarChart,
+} from "./dashboard/components/DashboardBarChart";
+import DashboardPieChart from "./dashboard/components/DashboardPieChart";
 import MetricCard from "./dashboard/components/MetricCard";
-import AnalyticsChart from "./dashboard/components/AnalyticsChart";
-import TrendChart from "./dashboard/components/TrendChart";
-import { Users, GraduationCap, UserCheck, BookOpen, Calendar, Activity } from "lucide-react";
 
 function AdminDashboardPage() {
-  const { accessToken, isBootstrapping } = useAppSelector((state) => state.auth);
+  const { skip, isBootstrapping } = useAuthQuerySkip();
 
-  const { data, isLoading, isError } = useGetDashboardStatsQuery(undefined, {
-    skip: isBootstrapping || !accessToken,
-  });
+  const { data, isLoading, isError } = useGetDashboardStatsQuery(undefined, { skip });
 
   if (isBootstrapping || isLoading) {
     return <DashboardSkeleton />;
@@ -33,17 +41,12 @@ function AdminDashboardPage() {
         description="Welcome back! Here's an overview of your Quranic school management system."
       />
 
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <MetricCard
           title="Students"
           value={stats.totalStudents}
           icon={GraduationCap}
           description="Active enrolled students"
-          trend={{
-            value: stats.recentRegistrations > 0 ? 12 : 0,
-            isPositive: true,
-            label: "vs last month",
-          }}
         />
         <MetricCard
           title="Teachers"
@@ -61,50 +64,64 @@ function AdminDashboardPage() {
           title="Assignments"
           value={stats.activeAssignments}
           icon={Calendar}
-          description="Current assignments"
+          description="Current active assignments"
         />
       </div>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <AnalyticsChart
+        <DashboardPieChart
           title="Student Demographics"
           subtitle="Gender distribution across all students"
           data={[
-            { label: "Male Students", value: stats.studentsByGender.male, color: chartColors.primary },
-            { label: "Female Students", value: stats.studentsByGender.female, color: chartColors.tertiary },
+            { label: "Male", value: stats.studentsByGender.male, color: dashboardChartColors.male },
+            {
+              label: "Female",
+              value: stats.studentsByGender.female,
+              color: dashboardChartColors.female,
+            },
           ]}
         />
 
-        <AnalyticsChart
+        <DashboardPieChart
           title="Assignment Status"
-          subtitle="Current assignment distribution"
+          subtitle="How teacher-class assignments are distributed"
           data={[
-            { label: "Active", value: stats.assignmentsByStatus.active, color: chartColors.primary },
-            { label: "Completed", value: stats.assignmentsByStatus.ended, color: chartColors.quaternary },
-            { label: "Inactive", value: stats.assignmentsByStatus.inactive, color: chartColors.accent },
+            { label: "Active", value: stats.assignmentsByStatus.active, color: dashboardChartColors.active },
+            {
+              label: "Completed",
+              value: stats.assignmentsByStatus.ended,
+              color: dashboardChartColors.completed,
+            },
+            {
+              label: "Inactive",
+              value: stats.assignmentsByStatus.inactive,
+              color: dashboardChartColors.inactive,
+            },
           ]}
         />
       </div>
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <TrendChart
-          title="Registration Trends"
-          subtitle="Monthly student and teacher registrations"
-          data={stats.monthlyRegistrations}
-        />
+      <DashboardGroupedBarChart
+        title="Registration Trends"
+        subtitle="Monthly student and teacher registrations"
+        data={stats.monthlyRegistrations}
+        xKey="month"
+        series={[
+          { key: "students", name: "Students", color: dashboardChartColors.students },
+          { key: "teachers", name: "Teachers", color: dashboardChartColors.teachers },
+        ]}
+      />
 
-        <AnalyticsChart
-          title="Class Distribution"
-          subtitle="Top classes by student enrollment"
-          data={stats.classDistribution.slice(0, 5).map((item, index) => ({
-            label: item.className,
-            value: item.studentCount,
-            color: getChartColor(index),
-          }))}
-        />
-      </div>
+      <DashboardCategoricalBarChart
+        title="Class Enrollment"
+        subtitle="Student count per class"
+        data={stats.classDistribution.map((item) => ({
+          label: item.className,
+          value: item.studentCount,
+        }))}
+      />
 
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <MetricCard
           title="Total Users"
           value={stats.totalUsers}
@@ -115,13 +132,13 @@ function AdminDashboardPage() {
           title="Recent Activity"
           value={stats.recentRegistrations}
           icon={Activity}
-          description="New registrations (30 days)"
+          description="New registrations in the last 30 days"
         />
         <MetricCard
-          title="Assignment Status"
-          value={`${stats.assignmentsByStatus.active}`}
+          title="Completed Assignments"
+          value={stats.assignmentsByStatus.ended}
           icon={Calendar}
-          description={`${stats.assignmentsByStatus.ended} completed`}
+          description="Assignments marked as ended"
         />
       </div>
     </div>

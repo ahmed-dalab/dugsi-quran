@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import { useGetClassesQuery } from "@/features/admin/classes/api/classApi";
 import { useGetStudentsQuery } from "@/features/admin/students/api/studentApi";
 import { LIST_ALL_PARAMS } from "@/lib/pagination";
-import { getApiErrorMessage, logDevError } from "@/lib/apiError";
+import { handleMutationError } from "@/lib/apiError";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -122,8 +122,7 @@ export default function CreateFeeDialog({ triggerClassName }: CreateFeeDialogPro
       });
       setOpen(false);
     } catch (error: unknown) {
-      logDevError("Create fee failed", error);
-      toast.error(getApiErrorMessage(error, "Failed to create fee record"));
+      handleMutationError("Create fee failed", error, "Failed to create fee record");
     }
   }
 

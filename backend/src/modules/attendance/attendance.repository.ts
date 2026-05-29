@@ -1,8 +1,8 @@
 import type { AttendanceStatus, Prisma } from "../../../generated/prisma";
 import { prisma } from "../../config/prisma";
 import type { PaginationQuery } from "../../utils/pagination";
+import { paginateQuery } from "../../utils/prismaRepository";
 import { buildPrismaOrSearch } from "../../utils/prismaSearch";
-import { buildPaginationMeta, getPrismaPaginationArgs } from "../../utils/prismaPagination";
 
 const attendanceInclude = {
   class: { select: { id: true, name: true, levelOrder: true } },
@@ -80,17 +80,20 @@ export const attendanceRepository = {
         : {}),
     };
 
-    const [docs, totalDocs] = await Promise.all([
-      prisma.attendance.findMany({
-        where,
-        ...getPrismaPaginationArgs(pagination),
-        orderBy: { date: pagination.sortOrder },
-        include: listInclude,
-      }),
-      prisma.attendance.count({ where }),
-    ]);
+    const orderBy = { date: pagination.sortOrder } as Prisma.AttendanceOrderByWithRelationInput;
 
-    return { docs, pagination: buildPaginationMeta(totalDocs, pagination) };
+    return paginateQuery({
+      findMany: ({ skip, take }) =>
+        prisma.attendance.findMany({
+          where,
+          skip,
+          take,
+          orderBy,
+          include: listInclude,
+        }),
+      count: () => prisma.attendance.count({ where }),
+      pagination,
+    });
   },
 
   async findHistoryByClass(classId: string, pagination: PaginationQuery, filters: { fromDate?: string; toDate?: string }) {

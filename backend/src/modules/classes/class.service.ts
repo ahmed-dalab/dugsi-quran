@@ -1,7 +1,8 @@
 import type { Request } from "express";
-import { isValidId } from "../../utils/id";
 import { parsePaginationQuery } from "../../utils/pagination";
-import { serializeEntity, serializeList } from "../../utils/serialize";
+import { parseBooleanQuery } from "../../utils/queryFilters";
+import { getByIdOrNull, mapPaginatedResult, mutateOrNull } from "../../utils/serviceHelpers";
+import { serializeEntity } from "../../utils/serialize";
 import type { IClass } from "./class.model";
 import { classRepository } from "./class.repository";
 
@@ -15,53 +16,27 @@ export const createClassService = async (payload: CreateClassPayload) => {
 
 export const getClassesService = async (query: Request["query"]) => {
   const pagination = parsePaginationQuery(query, { sortBy: "levelOrder", sortOrder: "asc" });
-  const filters: { isActive?: boolean } = {};
+  const result = await classRepository.findPaginated(pagination, {
+    isActive: parseBooleanQuery(query, "isActive"),
+  });
 
-  if (query.isActive === "true") {
-    filters.isActive = true;
-  } else if (query.isActive === "false") {
-    filters.isActive = false;
-  }
-
-  const result = await classRepository.findPaginated(pagination, filters);
-
-  return {
-    data: serializeList(result.docs),
-    pagination: result.pagination,
-  };
+  return mapPaginatedResult(result, serializeEntity);
 };
 
-export const getClassByIdService = async (id: string) => {
-  if (!isValidId(id)) {
-    return null;
-  }
+export const getClassByIdService = (id: string) =>
+  getByIdOrNull(id, async (validId) => {
+    const classItem = await classRepository.findById(validId);
+    return classItem ? serializeEntity(classItem) : null;
+  });
 
-  const classItem = await classRepository.findById(id);
-  return classItem ? serializeEntity(classItem) : null;
-};
-
-export const updateClassService = async (id: string, payload: UpdateClassPayload) => {
-  if (!isValidId(id)) {
-    return null;
-  }
-
-  try {
-    const classItem = await classRepository.update(id, payload);
+export const updateClassService = (id: string, payload: UpdateClassPayload) =>
+  mutateOrNull(id, async (validId) => {
+    const classItem = await classRepository.update(validId, payload);
     return serializeEntity(classItem);
-  } catch {
-    return null;
-  }
-};
+  });
 
-export const deleteClassService = async (id: string) => {
-  if (!isValidId(id)) {
-    return null;
-  }
-
-  try {
-    const classItem = await classRepository.delete(id);
+export const deleteClassService = (id: string) =>
+  mutateOrNull(id, async (validId) => {
+    const classItem = await classRepository.delete(validId);
     return serializeEntity(classItem);
-  } catch {
-    return null;
-  }
-};
+  });

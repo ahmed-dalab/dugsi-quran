@@ -1,8 +1,8 @@
 import type { Prisma, StudentGender, StudentStatus } from "../../../generated/prisma";
 import { prisma } from "../../config/prisma";
 import type { PaginationQuery } from "../../utils/pagination";
+import { paginateQuery } from "../../utils/prismaRepository";
 import { buildPrismaOrSearch } from "../../utils/prismaSearch";
-import { buildPaginationMeta, getPrismaPaginationArgs } from "../../utils/prismaPagination";
 
 const classSelect = { id: true, name: true, levelOrder: true };
 
@@ -25,19 +25,22 @@ export const studentRepository = {
       ...(filters.gender ? { gender: filters.gender } : {}),
     };
 
-    const orderBy = { [pagination.sortBy ?? "createdAt"]: pagination.sortOrder } as Prisma.StudentOrderByWithRelationInput;
+    const orderBy = {
+      [pagination.sortBy ?? "createdAt"]: pagination.sortOrder,
+    } as Prisma.StudentOrderByWithRelationInput;
 
-    const [docs, totalDocs] = await Promise.all([
-      prisma.student.findMany({
-        where,
-        ...getPrismaPaginationArgs(pagination),
-        orderBy,
-        include: { class: { select: classSelect } },
-      }),
-      prisma.student.count({ where }),
-    ]);
-
-    return { docs, pagination: buildPaginationMeta(totalDocs, pagination) };
+    return paginateQuery({
+      findMany: ({ skip, take }) =>
+        prisma.student.findMany({
+          where,
+          skip,
+          take,
+          orderBy,
+          include: { class: { select: classSelect } },
+        }),
+      count: () => prisma.student.count({ where }),
+      pagination,
+    });
   },
 
   findById(id: string) {

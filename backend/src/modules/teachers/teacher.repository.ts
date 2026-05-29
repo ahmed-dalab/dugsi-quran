@@ -1,8 +1,8 @@
 import type { EmploymentType, Prisma, TeacherStatus } from "../../../generated/prisma";
 import { prisma } from "../../config/prisma";
 import type { PaginationQuery } from "../../utils/pagination";
+import { paginateQuery } from "../../utils/prismaRepository";
 import { buildPrismaOrSearch } from "../../utils/prismaSearch";
-import { buildPaginationMeta, getPrismaPaginationArgs } from "../../utils/prismaPagination";
 import { mapEmergencyContactToDb } from "../../utils/mappers";
 
 const userSelect = { id: true, name: true, email: true, role: true, isActive: true };
@@ -79,17 +79,18 @@ export const teacherRepository = {
 
     const orderBy = { [pagination.sortBy ?? "createdAt"]: pagination.sortOrder } as Prisma.TeacherOrderByWithRelationInput;
 
-    const [docs, totalDocs] = await Promise.all([
-      prisma.teacher.findMany({
-        where,
-        ...getPrismaPaginationArgs(pagination),
-        orderBy,
-        include: teacherInclude,
-      }),
-      prisma.teacher.count({ where }),
-    ]);
-
-    return { docs, pagination: buildPaginationMeta(totalDocs, pagination) };
+    return paginateQuery({
+      findMany: ({ skip, take }) =>
+        prisma.teacher.findMany({
+          where,
+          skip,
+          take,
+          orderBy,
+          include: teacherInclude,
+        }),
+      count: () => prisma.teacher.count({ where }),
+      pagination,
+    });
   },
 
   findById(id: string) {

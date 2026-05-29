@@ -13,6 +13,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { handleMutationError } from "@/lib/apiError";
 import { useDeleteTeacherMutation } from "../api/teacherApi";
 import type { Teacher } from "../types/teacher.types";
 
@@ -35,9 +36,8 @@ export default function DeleteTeacherDialog({
       await deleteTeacher(teacher._id).unwrap();
       toast.success(`Teacher "${userName}" deleted successfully`);
       setOpen(false);
-    } catch (error: any) {
-      console.error("Delete teacher failed:", error);
-      toast.error(error?.data?.message || "Failed to delete teacher");
+    } catch (error: unknown) {
+      handleMutationError("Delete teacher failed", error, "Failed to delete teacher");
     }
   }
 

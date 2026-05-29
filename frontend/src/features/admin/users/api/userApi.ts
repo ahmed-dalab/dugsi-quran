@@ -1,5 +1,5 @@
 import { baseApi } from "@/app/baseApi";
-import { toListQueryParams, type ListQueryParams } from "@/lib/pagination";
+import { createCrudEndpoints, type ItemResponse } from "@/lib/createCrudApi";
 import type { PaginatedResponse } from "@/types/pagination";
 import type { User } from "../types/user.types";
 
@@ -18,67 +18,31 @@ export interface UpdateUserRequest {
   isActive?: boolean;
 }
 
-export interface UserResponse {
-  message: string;
-  data: User;
-}
-
+export type UserResponse = ItemResponse<User>;
 export type UsersResponse = PaginatedResponse<User>;
 
 export const userApi = baseApi.injectEndpoints({
-  endpoints: (builder) => ({
-    getUsers: builder.query<UsersResponse, ListQueryParams | void>({
-      query: (params) => ({
-        url: "/users/",
-        method: "GET",
-        params: toListQueryParams(params ?? undefined),
-      }),
-      providesTags: ["Users"],
-    }),
-    getUser: builder.query<UserResponse, string>({
-      query: (id) => ({
-        url: `/users/${id}`,
-        method: "GET",
-      }),
-      providesTags: ["Users"],
-    }),
-    createUser: builder.mutation<UserResponse, CreateUserRequest>({
-      query: (body) => ({
-        url: "/users/",
-        method: "POST",
-        body,
-      }),
-      invalidatesTags: ["Users"],
-    }),
+  endpoints: (builder) => {
+    const crud = createCrudEndpoints<User, CreateUserRequest, UpdateUserRequest>(builder, {
+      path: "/users",
+      tag: "Users",
+    });
 
-    updateUser: builder.mutation<
-      UserResponse,
-      { id: string; body: UpdateUserRequest }
-    >({
-      query: ({ id, body }) => ({
-        url: `/users/${id}`,
-        method: "PUT",
-        body,
+    return {
+      getUsers: crud.list,
+      getUser: crud.getOne,
+      createUser: crud.create,
+      updateUser: crud.update,
+      deleteUser: crud.remove,
+      toggleUserStatus: builder.mutation<UserResponse, string>({
+        query: (id) => ({
+          url: `/users/${id}/toggle-status`,
+          method: "PATCH",
+        }),
+        invalidatesTags: ["Users"],
       }),
-      invalidatesTags: ["Users"],
-    }),
-
-    deleteUser: builder.mutation<void, string>({
-      query: (id) => ({
-        url: `/users/${id}`,
-        method: "DELETE",
-      }),
-      invalidatesTags: ["Users"],
-    }),
-
-    toggleUserStatus: builder.mutation<UserResponse, string>({
-      query: (id) => ({
-        url: `/users/${id}/toggle-status`,
-        method: "PATCH",
-      }),
-      invalidatesTags: ["Users"],
-    }),
-  }),
+    };
+  },
   overrideExisting: false,
 });
 

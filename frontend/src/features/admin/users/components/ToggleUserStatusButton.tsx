@@ -2,6 +2,7 @@
 import { Power, PowerOff } from "lucide-react";
 import { toast } from "sonner";
 
+import { handleMutationError } from "@/lib/apiError";
 import { useToggleUserStatusMutation } from "../api/userApi";
 import type { User } from "../types/user.types";
 
@@ -21,9 +22,8 @@ export default function ToggleUserStatusButton({ user, className }: ToggleUserSt
       const updatedUser = await toggleUserStatus(user._id).unwrap();
       const status = updatedUser.data.isActive ? "activated" : "deactivated";
       toast.success(`User "${updatedUser.data.name}" ${status} successfully`);
-    } catch (error: any) {
-      console.error("Toggle user status failed:", error);
-      toast.error(error?.data?.message || "Failed to update user status");
+    } catch (error: unknown) {
+      handleMutationError("Toggle user status failed", error, "Failed to update user status");
     }
   }
 

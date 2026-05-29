@@ -2,6 +2,7 @@
 import { Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
+import { handleMutationError } from "@/lib/apiError";
 import { useDeleteUserMutation } from "../api/userApi";
 import type { User } from "../types/user.types";
 
@@ -31,9 +32,8 @@ export default function DeleteUserDialog({ user, triggerClassName }: DeleteUserD
       await deleteUser(user._id).unwrap();
       toast.success(`User "${user.name}" deleted successfully`);
       setOpen(false);
-    } catch (error: any) {
-      console.error("Delete user failed:", error);
-      toast.error(error?.data?.message || "Failed to delete user");
+    } catch (error: unknown) {
+      handleMutationError("Delete user failed", error, "Failed to delete user");
     }
   }
 

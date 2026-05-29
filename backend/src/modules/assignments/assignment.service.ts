@@ -2,6 +2,11 @@ import type { Request } from "express";
 import { AppError } from "../../shared/errors/AppError";
 import { isValidId } from "../../utils/id";
 import { emptyPaginatedList, getQueryString, parsePaginationQuery } from "../../utils/pagination";
+import {
+  ASSIGNMENT_STATUSES,
+  parseEnumFilter,
+} from "../../utils/queryFilters";
+import { getByIdOrNull, mapPaginatedResult, mutateOrNull } from "../../utils/serviceHelpers";
 import { mapAssignmentRecord } from "../../utils/mappers";
 import { teacherRepository } from "../teachers/teacher.repository";
 import { assignmentRepository } from "./assignment.repository";
@@ -18,6 +23,9 @@ export interface UpdateAssignmentPayload {
   endDate?: Date | null;
   notes?: string;
 }
+
+const parseAssignmentStatus = (query: Request["query"]) =>
+  parseEnumFilter(getQueryString(query, "status"), ASSIGNMENT_STATUSES);
 
 export const createAssignmentService = async (payload: CreateAssignmentPayload) => {
   const { teacherId, classId, notes, assignedBy } = payload;
@@ -46,26 +54,18 @@ export const createAssignmentService = async (payload: CreateAssignmentPayload) 
 
 export const getAssignmentsService = async (query: Request["query"]) => {
   const pagination = parsePaginationQuery(query, { sortBy: "assignedDate", sortOrder: "desc" });
-  const status = getQueryString(query, "status");
-
   const result = await assignmentRepository.findPaginated(pagination, {
-    status: status === "active" || status === "inactive" || status === "ended" ? status : undefined,
+    status: parseAssignmentStatus(query),
   });
 
-  return {
-    data: result.docs.map(mapAssignmentRecord),
-    pagination: result.pagination,
-  };
+  return mapPaginatedResult(result, mapAssignmentRecord);
 };
 
-export const getAssignmentByIdService = async (id: string) => {
-  if (!isValidId(id)) {
-    return null;
-  }
-
-  const assignment = await assignmentRepository.findById(id);
-  return assignment ? mapAssignmentRecord(assignment) : null;
-};
+export const getAssignmentByIdService = (id: string) =>
+  getByIdOrNull(id, async (validId) => {
+    const assignment = await assignmentRepository.findById(validId);
+    return assignment ? mapAssignmentRecord(assignment) : null;
+  });
 
 export const getAssignmentsByTeacherService = async (teacherId: string, query: Request["query"]) => {
   if (!isValidId(teacherId)) {
@@ -73,17 +73,12 @@ export const getAssignmentsByTeacherService = async (teacherId: string, query: R
   }
 
   const pagination = parsePaginationQuery(query, { sortBy: "assignedDate", sortOrder: "desc" });
-  const status = getQueryString(query, "status");
-
   const result = await assignmentRepository.findPaginated(pagination, {
     teacherId,
-    status: status === "active" || status === "inactive" || status === "ended" ? status : undefined,
+    status: parseAssignmentStatus(query),
   });
 
-  return {
-    data: result.docs.map(mapAssignmentRecord),
-    pagination: result.pagination,
-  };
+  return mapPaginatedResult(result, mapAssignmentRecord);
 };
 
 export const getAssignmentsByClassService = async (classId: string, query: Request["query"]) => {
@@ -92,50 +87,28 @@ export const getAssignmentsByClassService = async (classId: string, query: Reque
   }
 
   const pagination = parsePaginationQuery(query, { sortBy: "assignedDate", sortOrder: "desc" });
-  const status = getQueryString(query, "status");
-
   const result = await assignmentRepository.findPaginated(pagination, {
     classId,
-    status: status === "active" || status === "inactive" || status === "ended" ? status : undefined,
+    status: parseAssignmentStatus(query),
   });
 
-  return {
-    data: result.docs.map(mapAssignmentRecord),
-    pagination: result.pagination,
-  };
+  return mapPaginatedResult(result, mapAssignmentRecord);
 };
 
-export const updateAssignmentService = async (id: string, payload: UpdateAssignmentPayload) => {
-  if (!isValidId(id)) {
-    return null;
-  }
-
-  try {
-    const assignment = await assignmentRepository.update(id, payload);
+export const updateAssignmentService = (id: string, payload: UpdateAssignmentPayload) =>
+  mutateOrNull(id, async (validId) => {
+    const assignment = await assignmentRepository.update(validId, payload);
     return mapAssignmentRecord(assignment);
-  } catch {
-    return null;
-  }
-};
+  });
 
-export const deleteAssignmentService = async (id: string) => {
-  if (!isValidId(id)) {
-    return null;
-  }
-
-  try {
-    const assignment = await assignmentRepository.delete(id);
+export const deleteAssignmentService = (id: string) =>
+  mutateOrNull(id, async (validId) => {
+    const assignment = await assignmentRepository.delete(validId);
     return mapAssignmentRecord(assignment);
-  } catch {
-    return null;
-  }
-};
+  });
 
-export const getCurrentAssignmentForTeacherService = async (teacherId: string) => {
-  if (!isValidId(teacherId)) {
-    return null;
-  }
-
-  const assignment = await assignmentRepository.findActiveForTeacher(teacherId);
-  return assignment ? mapAssignmentRecord(assignment) : null;
-};
+export const getCurrentAssignmentForTeacherService = (teacherId: string) =>
+  getByIdOrNull(teacherId, async (validId) => {
+    const assignment = await assignmentRepository.findActiveForTeacher(validId);
+    return assignment ? mapAssignmentRecord(assignment) : null;
+  });

@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { validateRequest } from "../../middlewares/validateRequest";
 import {
   createClass,
   deleteClass,
@@ -6,13 +7,18 @@ import {
   getClasses,
   updateClass,
 } from "./class.controller";
+import {
+  classParamsSchema,
+  createClassSchema,
+  updateClassSchema,
+} from "./class.validations";
 
 const classRouter = Router();
 
-classRouter.post("/", createClass);
+classRouter.post("/", validateRequest(createClassSchema), createClass);
 classRouter.get("/", getClasses);
-classRouter.get("/:id", getClass);
-classRouter.put("/:id", updateClass);
-classRouter.delete("/:id", deleteClass);
+classRouter.get("/:id", validateRequest(classParamsSchema), getClass);
+classRouter.put("/:id", validateRequest(updateClassSchema), updateClass);
+classRouter.delete("/:id", validateRequest(classParamsSchema), deleteClass);
 
 export default classRouter;

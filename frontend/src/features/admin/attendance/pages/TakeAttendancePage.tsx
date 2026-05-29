@@ -3,14 +3,14 @@ import { ArrowLeft } from "lucide-react";
 import { Link, useNavigate } from "react-router";
 import { toast } from "sonner";
 
-import { useAppSelector } from "@/app/hooks";
+import { useAuthQuerySkip } from "@/hooks/useAuthQuerySkip";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { AppSelect } from "@/components/ui/select";
 import { useGetClassesQuery } from "@/features/admin/classes/api/classApi";
 import { useGetStudentsQuery } from "@/features/admin/students/api/studentApi";
-import { getApiErrorMessage, logDevError } from "@/lib/apiError";
+import { handleMutationError } from "@/lib/apiError";
 import { LIST_ALL_PARAMS } from "@/lib/pagination";
 import { PATHS } from "@/router/paths";
 import type { Student } from "@/features/admin/students/types/student.types";
@@ -25,13 +25,13 @@ const getDisplayName = (student: Student) => student.fullName;
 
 export default function TakeAttendancePage() {
   const navigate = useNavigate();
-  const { accessToken, isBootstrapping } = useAppSelector((state) => state.auth);
+  const { skip, isBootstrapping } = useAuthQuerySkip();
   const [selectedClassId, setSelectedClassId] = useState("");
   const [selectedDate, setSelectedDate] = useState(today);
   const [checkedByStudentId, setCheckedByStudentId] = useState<Record<string, boolean>>({});
 
   const { data: classesData, isLoading: isClassesLoading } = useGetClassesQuery(LIST_ALL_PARAMS, {
-    skip: isBootstrapping || !accessToken,
+    skip,
   });
 
   const studentListParams = selectedClassId
@@ -41,7 +41,7 @@ export default function TakeAttendancePage() {
   const { data: studentsData, isLoading: isStudentsLoading } = useGetStudentsQuery(
     studentListParams!,
     {
-      skip: isBootstrapping || !accessToken || !studentListParams,
+      skip: skip || !studentListParams,
     }
   );
 
@@ -125,8 +125,7 @@ export default function TakeAttendancePage() {
       toast.success("Attendance saved successfully");
       navigate(PATHS.adminAttendance);
     } catch (error: unknown) {
-      logDevError("Save attendance failed", error);
-      toast.error(getApiErrorMessage(error, "Failed to save attendance"));
+      handleMutationError("Save attendance failed", error, "Failed to save attendance");
     }
   };
 

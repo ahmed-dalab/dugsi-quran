@@ -4,6 +4,8 @@ import type { EmploymentType, TeacherGender, TeacherStatus } from "../../../gene
 import { env } from "../../config/env";
 import { isValidId } from "../../utils/id";
 import { getQueryString, parsePaginationQuery } from "../../utils/pagination";
+import { ACTIVE_INACTIVE, parseEnumFilter } from "../../utils/queryFilters";
+import { getByIdOrNull, mapPaginatedResult } from "../../utils/serviceHelpers";
 import { mapTeacherRecord, toEmploymentType } from "../../utils/mappers";
 import { teacherRepository } from "./teacher.repository";
 
@@ -68,28 +70,22 @@ export const createTeacherService = async (payload: CreateTeacherPayload) => {
 
 export const getTeachersService = async (query: Request["query"]) => {
   const pagination = parsePaginationQuery(query, { sortBy: "createdAt", sortOrder: "desc" });
-  const status = getQueryString(query, "status");
-  const employmentType = getQueryString(query, "employmentType");
 
   const result = await teacherRepository.findPaginated(pagination, {
-    status: status === "active" || status === "inactive" ? status : undefined,
-    employmentType: toEmploymentType(employmentType),
+    status: parseEnumFilter(getQueryString(query, "status"), ACTIVE_INACTIVE),
+    employmentType: toEmploymentType(getQueryString(query, "employmentType")),
   });
 
-  return {
-    data: result.docs.map((teacher) => mapTeacherRecord({ ...teacher, user: teacher.user })),
-    pagination: result.pagination,
-  };
+  return mapPaginatedResult(result, (teacher) =>
+    mapTeacherRecord({ ...teacher, user: teacher.user })
+  );
 };
 
-export const getTeacherByIdService = async (id: string) => {
-  if (!isValidId(id)) {
-    return null;
-  }
-
-  const teacher = await teacherRepository.findById(id);
-  return teacher ? mapTeacherRecord({ ...teacher, user: teacher.user }) : null;
-};
+export const getTeacherByIdService = (id: string) =>
+  getByIdOrNull(id, async (validId) => {
+    const teacher = await teacherRepository.findById(validId);
+    return teacher ? mapTeacherRecord({ ...teacher, user: teacher.user }) : null;
+  });
 
 export const updateTeacherService = async (id: string, payload: UpdateTeacherPayload) => {
   if (!isValidId(id)) {
@@ -134,11 +130,10 @@ export const updateTeacherService = async (id: string, payload: UpdateTeacherPay
   return updatedTeacher ? mapTeacherRecord({ ...updatedTeacher, user: updatedTeacher.user }) : null;
 };
 
-export const deleteTeacherService = async (id: string) => {
-  if (!isValidId(id)) {
-    return null;
-  }
-
-  const deletedTeacher = await teacherRepository.deleteWithUser(id);
-  return deletedTeacher ? mapTeacherRecord({ ...deletedTeacher, user: deletedTeacher.user }) : null;
-};
+export const deleteTeacherService = (id: string) =>
+  getByIdOrNull(id, async (validId) => {
+    const deletedTeacher = await teacherRepository.deleteWithUser(validId);
+    return deletedTeacher
+      ? mapTeacherRecord({ ...deletedTeacher, user: deletedTeacher.user })
+      : null;
+  });

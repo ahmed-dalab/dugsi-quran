@@ -1,8 +1,18 @@
 import type { Prisma, UserRole } from "../../../generated/prisma";
 import { prisma } from "../../config/prisma";
 import type { PaginationQuery } from "../../utils/pagination";
+import { paginateQuery } from "../../utils/prismaRepository";
 import { buildPrismaOrSearch } from "../../utils/prismaSearch";
-import { buildPaginationMeta, getPrismaPaginationArgs } from "../../utils/prismaPagination";
+
+const userSelect = {
+  id: true,
+  name: true,
+  email: true,
+  role: true,
+  isActive: true,
+  createdAt: true,
+  updatedAt: true,
+} satisfies Prisma.UserSelect;
 
 export const userRepository = {
   create(data: Prisma.UserCreateInput) {
@@ -16,41 +26,22 @@ export const userRepository = {
       ...(filters.isActive !== undefined ? { isActive: filters.isActive } : {}),
     };
 
-    const orderBy = { [pagination.sortBy ?? "createdAt"]: pagination.sortOrder } as Prisma.UserOrderByWithRelationInput;
+    const orderBy = {
+      [pagination.sortBy ?? "createdAt"]: pagination.sortOrder,
+    } as Prisma.UserOrderByWithRelationInput;
 
-    const [docs, totalDocs] = await Promise.all([
-      prisma.user.findMany({
-        where,
-        ...getPrismaPaginationArgs(pagination),
-        orderBy,
-        select: {
-          id: true,
-          name: true,
-          email: true,
-          role: true,
-          isActive: true,
-          createdAt: true,
-          updatedAt: true,
-        },
-      }),
-      prisma.user.count({ where }),
-    ]);
-
-    return { docs, pagination: buildPaginationMeta(totalDocs, pagination) };
+    return paginateQuery({
+      findMany: ({ skip, take }) =>
+        prisma.user.findMany({ where, skip, take, orderBy, select: userSelect }),
+      count: () => prisma.user.count({ where }),
+      pagination,
+    });
   },
 
   findById(id: string) {
     return prisma.user.findUnique({
       where: { id },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        role: true,
-        isActive: true,
-        createdAt: true,
-        updatedAt: true,
-      },
+      select: userSelect,
     });
   },
 
@@ -62,30 +53,14 @@ export const userRepository = {
     return prisma.user.update({
       where: { id },
       data,
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        role: true,
-        isActive: true,
-        createdAt: true,
-        updatedAt: true,
-      },
+      select: userSelect,
     });
   },
 
   delete(id: string) {
     return prisma.user.delete({
       where: { id },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        role: true,
-        isActive: true,
-        createdAt: true,
-        updatedAt: true,
-      },
+      select: userSelect,
     });
   },
 

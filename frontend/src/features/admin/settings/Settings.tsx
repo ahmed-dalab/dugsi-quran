@@ -3,22 +3,21 @@ import { Controller, useForm } from "react-hook-form";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
-import { useAppSelector } from "@/app/hooks";
 import { SettingsSkeleton } from "@/components/skeletons";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { useAuthQuerySkip } from "@/hooks/useAuthQuerySkip";
+import { handleMutationError } from "@/lib/apiError";
 import { useGetSettingsQuery, useUpdateSettingsMutation } from "./api/settingsApi";
 import { updateSettingsSchema, type UpdateSettingsFormValues } from "./schemas/updateSettingsSchema";
 
 export default function Settings() {
-  const { accessToken, isBootstrapping } = useAppSelector((state) => state.auth);
+  const { skip, isBootstrapping } = useAuthQuerySkip();
   const [isEditing, setIsEditing] = useState(false);
 
-  const { data, isLoading, isError } = useGetSettingsQuery(undefined, {
-    skip: isBootstrapping || !accessToken,
-  });
+  const { data, isLoading, isError } = useGetSettingsQuery(undefined, { skip });
   const [updateSettings, { isLoading: isSaving }] = useUpdateSettingsMutation();
 
   const form = useForm<UpdateSettingsFormValues>({
@@ -64,9 +63,8 @@ export default function Settings() {
 
       toast.success("Settings updated successfully");
       setIsEditing(false);
-    } catch (error: any) {
-      console.error("Update settings failed:", error);
-      toast.error(error?.data?.message || "Failed to update settings");
+    } catch (error: unknown) {
+      handleMutationError("Update settings failed", error, "Failed to update settings");
     }
   }
 

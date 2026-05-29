@@ -2,6 +2,32 @@ import type { EmploymentType } from "../../generated/prisma";
 import { fromEmploymentType, toEmploymentType } from "./enumMappers";
 import { serializeEntity } from "./serialize";
 
+type RelationMap = Record<string, string>;
+
+export const flattenRelations = <T extends Record<string, unknown>>(
+  entity: T,
+  relations: RelationMap
+) => {
+  const flattened = { ...entity } as Record<string, unknown>;
+
+  for (const [relationKey, targetKey] of Object.entries(relations)) {
+    const relationValue = flattened[relationKey];
+
+    if (relationValue !== undefined) {
+      flattened[targetKey] = relationValue ?? flattened[targetKey];
+      delete flattened[relationKey];
+    }
+  }
+
+  return flattened;
+};
+
+export const mapEntityWithRelations = <T extends Record<string, unknown>>(
+  entity: T,
+  relations: RelationMap
+) => serializeEntity(flattenRelations(entity, relations));
+
+
 type EmergencyContactInput = {
   name?: string;
   phone?: string;
@@ -67,14 +93,8 @@ export const mapTeacherRecord = <
   return serializeEntity(mapped);
 };
 
-export const mapStudentRecord = <T extends { class?: unknown; classId?: unknown }>(student: T) => {
-  const { class: classRelation, ...rest } = student;
-
-  return serializeEntity({
-    ...rest,
-    classId: classRelation ?? rest.classId,
-  });
-};
+export const mapStudentRecord = <T extends { class?: unknown; classId?: unknown }>(student: T) =>
+  mapEntityWithRelations(student as Record<string, unknown>, { class: "classId" });
 
 export const mapFeeRecord = <
   T extends {
@@ -87,16 +107,12 @@ export const mapFeeRecord = <
   },
 >(
   fee: T
-) => {
-  const { student, class: classRelation, receivedBy, ...rest } = fee;
-
-  return serializeEntity({
-    ...rest,
-    studentId: student ?? rest.studentId,
-    classId: classRelation ?? rest.classId,
-    receivedBy: receivedBy ?? rest.receivedById,
+) =>
+  mapEntityWithRelations(fee as Record<string, unknown>, {
+    student: "studentId",
+    class: "classId",
+    receivedBy: "receivedById",
   });
-};
 
 export const mapAssignmentRecord = <
   T extends {
@@ -147,18 +163,24 @@ export const mapAttendanceRecord = <
 >(
   attendance: T
 ) => {
-  const { class: classRelation, takenBy, records, ...rest } = attendance;
+  const mapped = mapEntityWithRelations(attendance as Record<string, unknown>, {
+    class: "classId",
+    takenBy: "takenById",
+  });
 
-  return serializeEntity({
-    ...rest,
-    classId: classRelation ?? rest.classId,
-    takenBy: takenBy ?? rest.takenById,
-    records: (records ?? []).map((record) => ({
+  return {
+    ...mapped,
+    records: ((attendance.records ?? []) as Array<{
+      student?: unknown;
+      studentId?: unknown;
+      status: string;
+      note?: string | null;
+    }>).map((record) => ({
       studentId: record.student ?? record.studentId,
       status: record.status,
       note: record.note ?? undefined,
     })),
-  });
+  };
 };
 
 export { toEmploymentType };

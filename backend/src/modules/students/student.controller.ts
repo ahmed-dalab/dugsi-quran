@@ -1,7 +1,7 @@
 import type { Request, Response } from "express";
-import { assertFound } from "../../shared/errors/assertFound";
 import { asyncHandler } from "../../utils/asyncHandler";
 import { getIdParam } from "../../utils/getIdParam";
+import { respondCreated, respondPaginated, respondResource } from "../../utils/respond";
 import {
   createStudentService,
   deleteStudentService,
@@ -12,55 +12,34 @@ import {
 
 export const createStudent = asyncHandler(async (req: Request, res: Response) => {
   const student = await createStudentService(req.body);
-
-  res.status(201).json({
-    message: "Student created successfully",
-    data: student,
-  });
+  respondCreated(res, "Student created successfully", student);
 });
 
 export const getStudents = asyncHandler(async (req: Request, res: Response) => {
   const result = await getStudentsService(req.query);
-
-  res.status(200).json({
-    message: "Students retrieved successfully",
-    data: result.data,
-    pagination: result.pagination,
-  });
+  respondPaginated(res, "Students retrieved successfully", result);
 });
 
 export const getStudent = asyncHandler(async (req: Request, res: Response) => {
-  const student = assertFound(
-    await getStudentByIdService(getIdParam(req.params.id)),
-    "Student not found"
-  );
-
-  res.status(200).json({
+  await respondResource(res, {
     message: "Student retrieved successfully",
-    data: student,
+    notFoundMessage: "Student not found",
+    fetch: () => getStudentByIdService(getIdParam(req.params.id)),
   });
 });
 
 export const updateStudent = asyncHandler(async (req: Request, res: Response) => {
-  const student = assertFound(
-    await updateStudentService(getIdParam(req.params.id), req.body),
-    "Student not found"
-  );
-
-  res.status(200).json({
+  await respondResource(res, {
     message: "Student updated successfully",
-    data: student,
+    notFoundMessage: "Student not found",
+    fetch: () => updateStudentService(getIdParam(req.params.id), req.body),
   });
 });
 
 export const deleteStudent = asyncHandler(async (req: Request, res: Response) => {
-  const student = assertFound(
-    await deleteStudentService(getIdParam(req.params.id)),
-    "Student not found"
-  );
-
-  res.status(200).json({
+  await respondResource(res, {
     message: "Student deleted successfully",
-    data: student,
+    notFoundMessage: "Student not found",
+    fetch: () => deleteStudentService(getIdParam(req.params.id)),
   });
 });

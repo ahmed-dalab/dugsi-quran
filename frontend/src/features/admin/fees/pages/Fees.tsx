@@ -1,50 +1,40 @@
-import { useAppSelector } from "@/app/hooks";
-import { ListPageSkeleton } from "@/components/skeletons";
-import ListSearch from "@/components/common/ListSearch";
-import TablePagination from "@/components/common/TablePagination";
+import AdminListPage from "@/components/common/AdminListPage";
+import { useAuthQuerySkip } from "@/hooks/useAuthQuerySkip";
 import { useListQueryState } from "@/hooks/useListQueryState";
 import { useGetFeesQuery } from "../api/feeApi";
 import CreateFeeDialog from "../components/CreateFeeDialog";
 import FeesTable from "../components/FeesTable";
 
 export default function Fees() {
-  const { accessToken, isBootstrapping } = useAppSelector((state) => state.auth);
+  const { skip, isBootstrapping } = useAuthQuerySkip();
   const { search, setSearch, params, setPage } = useListQueryState();
 
-  const { data, isLoading, isError, isFetching } = useGetFeesQuery(params, {
-    skip: isBootstrapping || !accessToken,
-  });
-
-  if (isBootstrapping || isLoading) {
-    return <ListPageSkeleton columns={7} />;
-  }
-
-  if (isError) {
-    return <div>Failed to load fee records.</div>;
-  }
+  const { data, isLoading, isError, isFetching } = useGetFeesQuery(params, { skip });
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
-        <div>
-          <h1 className="text-2xl font-semibold">Fees</h1>
-          <p className="text-sm text-muted-foreground">
-            Track monthly student fee payments.
-          </p>
-        </div>
-
-        <CreateFeeDialog />
-      </div>
-
-      <ListSearch value={search} onChange={setSearch} placeholder="Search fees..." />
-
-      {!data || data.data.length === 0 ? <div>No fee records found.</div> : <FeesTable fees={data.data} />}
-
-      <TablePagination
-        pagination={data?.pagination}
-        onPageChange={setPage}
-        isLoading={isFetching}
-      />
-    </div>
+    <AdminListPage
+      title="Fees"
+      description="Track monthly student fee payments."
+      action={<CreateFeeDialog />}
+      search={{
+        value: search,
+        onChange: setSearch,
+        placeholder: "Search fees...",
+      }}
+      pagination={{
+        meta: data?.pagination,
+        onPageChange: setPage,
+        isLoading: isFetching,
+      }}
+      isBootstrapping={isBootstrapping}
+      isLoading={isLoading}
+      isError={isError}
+      errorMessage="Failed to load fee records."
+      emptyMessage="No fee records found."
+      isEmpty={!data || data.data.length === 0}
+      skeletonColumns={7}
+    >
+      {data && data.data.length > 0 ? <FeesTable fees={data.data} /> : null}
+    </AdminListPage>
   );
 }

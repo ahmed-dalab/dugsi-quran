@@ -1,3 +1,5 @@
+import { toast } from "sonner";
+
 type ApiErrorBody = {
   message?: string;
   errors?: { field: string; message: string }[];
@@ -32,4 +34,9 @@ export function getApiErrorMessage(error: unknown, fallback: string) {
   }
 
   return data?.message || fallback;
+}
+
+export function handleMutationError(context: string, error: unknown, fallback: string) {
+  logDevError(context, error);
+  toast.error(getApiErrorMessage(error, fallback));
 }

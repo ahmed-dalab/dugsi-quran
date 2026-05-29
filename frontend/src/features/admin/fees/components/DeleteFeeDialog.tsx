@@ -12,6 +12,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { handleMutationError } from "@/lib/apiError";
 import { useDeleteFeeMutation } from "../api/feeApi";
 import type { FeePayment } from "../types/fee.types";
 
@@ -29,9 +30,8 @@ export default function DeleteFeeDialog({ fee, triggerClassName }: DeleteFeeDial
       await deleteFee(fee._id).unwrap();
       toast.success("Fee payment deleted successfully");
       setOpen(false);
-    } catch (error: any) {
-      console.error("Delete fee failed:", error);
-      toast.error(error?.data?.message || "Failed to delete fee payment");
+    } catch (error: unknown) {
+      handleMutationError("Delete fee failed", error, "Failed to delete fee payment");
     }
   }
 

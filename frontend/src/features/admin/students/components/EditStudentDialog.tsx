@@ -24,7 +24,7 @@ import {
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { AppSelect } from "@/components/ui/select";
-import { getApiErrorMessage, logDevError } from "@/lib/apiError";
+import { handleMutationError } from "@/lib/apiError";
 import { useUpdateStudentMutation } from "../api/studentApi";
 import { editStudentSchema, type EditStudentFormValues } from "../schemas/editStudentSchema";
 import type { Student } from "../types/student.types";
@@ -108,8 +108,7 @@ export default function EditStudentDialog({
       toast.success(`Student "${updatedStudent.data.fullName}" updated successfully`);
       setOpen(false);
     } catch (error: unknown) {
-      logDevError("Update student failed", error);
-      toast.error(getApiErrorMessage(error, "Failed to update student"));
+      handleMutationError("Update student failed", error, "Failed to update student");
     }
   }
 

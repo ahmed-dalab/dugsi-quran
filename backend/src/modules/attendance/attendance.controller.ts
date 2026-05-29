@@ -1,8 +1,7 @@
 import type { Request, Response } from "express";
-import { assertFound } from "../../shared/errors/assertFound";
-import { AppError } from "../../shared/errors/AppError";
 import { asyncHandler } from "../../utils/asyncHandler";
 import { getIdParam } from "../../utils/getIdParam";
+import { respondCreated, respondPaginated, respondResource } from "../../utils/respond";
 import {
   getAttendanceByClassAndDateService,
   getAttendanceHistoryByClassService,
@@ -15,49 +14,27 @@ export const takeAttendance = asyncHandler(async (req: Request, res: Response) =
     ...req.body,
     takenBy: req.user?.id ?? "",
   });
-
-  res.status(201).json({
-    message: "Attendance saved successfully",
-    data: attendance,
-  });
+  respondCreated(res, "Attendance saved successfully", attendance);
 });
 
 export const getAttendanceList = asyncHandler(async (req: Request, res: Response) => {
   const result = await getAttendanceListService(req.query);
-
-  res.status(200).json({
-    message: "Attendance records retrieved successfully",
-    data: result.data,
-    pagination: result.pagination,
-  });
+  respondPaginated(res, "Attendance records retrieved successfully", result);
 });
 
 export const getAttendanceByClassAndDate = asyncHandler(async (req: Request, res: Response) => {
   const classId = getIdParam(req.params.classId);
   const date = typeof req.query.date === "string" ? req.query.date : "";
 
-  if (!date) {
-    throw new AppError(400, "Query param 'date' is required (YYYY-MM-DD)");
-  }
-
-  const attendance = assertFound(
-    await getAttendanceByClassAndDateService(classId, date),
-    "Attendance not found for this class and date"
-  );
-
-  res.status(200).json({
+  await respondResource(res, {
     message: "Attendance retrieved successfully",
-    data: attendance,
+    notFoundMessage: "Attendance not found for this class and date",
+    fetch: () => getAttendanceByClassAndDateService(classId, date),
   });
 });
 
 export const getAttendanceHistoryByClass = asyncHandler(async (req: Request, res: Response) => {
   const classId = getIdParam(req.params.classId);
   const result = await getAttendanceHistoryByClassService(classId, req.query);
-
-  res.status(200).json({
-    message: "Attendance history retrieved successfully",
-    data: result.data,
-    pagination: result.pagination,
-  });
+  respondPaginated(res, "Attendance history retrieved successfully", result);
 });

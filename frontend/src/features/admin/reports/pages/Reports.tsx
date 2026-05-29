@@ -1,18 +1,16 @@
 import { useMemo } from "react";
 
-import { useAppSelector } from "@/app/hooks";
 import { ReportsSkeleton } from "@/components/skeletons";
+import { useAuthQuerySkip } from "@/hooks/useAuthQuerySkip";
 import { useGetReportsOverviewQuery } from "../api/reportApi";
 
 const formatNumber = (value: number) => value.toLocaleString();
 const formatCurrency = (value: number) => `$${value.toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
 
 export default function Reports() {
-  const { accessToken, isBootstrapping } = useAppSelector((state) => state.auth);
+  const { skip, isBootstrapping } = useAuthQuerySkip();
 
-  const { data, isLoading, isError } = useGetReportsOverviewQuery(undefined, {
-    skip: isBootstrapping || !accessToken,
-  });
+  const { data, isLoading, isError } = useGetReportsOverviewQuery(undefined, { skip });
 
   const maxCollection = useMemo(() => {
     if (!data?.data.monthlyCollections?.length) {

@@ -24,7 +24,7 @@ import {
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { AppSelect } from "@/components/ui/select";
-import { getApiErrorMessage, logDevError } from "@/lib/apiError";
+import { handleMutationError } from "@/lib/apiError";
 import { useCreateStudentMutation } from "../api/studentApi";
 import {
   createStudentSchema,
@@ -96,8 +96,7 @@ export default function CreateStudentDialog({
       });
       setOpen(false);
     } catch (error: unknown) {
-      logDevError("Create student failed", error);
-      toast.error(getApiErrorMessage(error, "Failed to create student"));
+      handleMutationError("Create student failed", error, "Failed to create student");
     }
   }
 

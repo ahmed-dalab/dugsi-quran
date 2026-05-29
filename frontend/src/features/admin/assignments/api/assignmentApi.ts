@@ -1,5 +1,6 @@
 import { baseApi } from "@/app/baseApi";
 import { toListQueryParams, type ListQueryParams } from "@/lib/pagination";
+import { createCrudEndpoints, type ItemResponse } from "@/lib/createCrudApi";
 import type { PaginatedResponse } from "@/types/pagination";
 import type { TeacherClassAssignment } from "../types/assignment.types";
 
@@ -15,11 +16,7 @@ export interface UpdateAssignmentRequest {
   notes?: string;
 }
 
-export interface AssignmentResponse {
-  message: string;
-  data: TeacherClassAssignment;
-}
-
+export type AssignmentResponse = ItemResponse<TeacherClassAssignment>;
 export type AssignmentsResponse = PaginatedResponse<TeacherClassAssignment>;
 
 export type AssignmentsListParams = ListQueryParams & {
@@ -35,72 +32,48 @@ export type AssignmentsByClassParams = ListQueryParams & {
 };
 
 export const assignmentApi = baseApi.injectEndpoints({
-  endpoints: (builder) => ({
-    getAssignments: builder.query<AssignmentsResponse, AssignmentsListParams | void>({
-      query: (params) => ({
-        url: "/assignments/",
-        method: "GET",
-        params: toListQueryParams(params ?? undefined),
+  endpoints: (builder) => {
+    const crud = createCrudEndpoints<
+      TeacherClassAssignment,
+      CreateAssignmentRequest,
+      UpdateAssignmentRequest
+    >(builder, {
+      path: "/assignments",
+      tag: "Assignments",
+      extraInvalidates: ["Teachers"],
+    });
+
+    return {
+      getAssignments: crud.list,
+      getAssignment: crud.getOne,
+      createAssignment: crud.create,
+      updateAssignment: crud.update,
+      deleteAssignment: crud.remove,
+      getAssignmentsByTeacher: builder.query<AssignmentsResponse, AssignmentsByTeacherParams>({
+        query: ({ teacherId, ...params }) => ({
+          url: `/assignments/teacher/${teacherId}`,
+          method: "GET",
+          params: toListQueryParams(params),
+        }),
+        providesTags: ["Assignments"],
       }),
-      providesTags: ["Assignments"],
-    }),
-    getAssignment: builder.query<AssignmentResponse, string>({
-      query: (id) => ({
-        url: `/assignments/${id}`,
-        method: "GET",
+      getCurrentAssignmentForTeacher: builder.query<AssignmentResponse, string>({
+        query: (teacherId) => ({
+          url: `/assignments/teacher/${teacherId}/current`,
+          method: "GET",
+        }),
+        providesTags: ["Assignments"],
       }),
-      providesTags: ["Assignments"],
-    }),
-    getAssignmentsByTeacher: builder.query<AssignmentsResponse, AssignmentsByTeacherParams>({
-      query: ({ teacherId, ...params }) => ({
-        url: `/assignments/teacher/${teacherId}`,
-        method: "GET",
-        params: toListQueryParams(params),
+      getAssignmentsByClass: builder.query<AssignmentsResponse, AssignmentsByClassParams>({
+        query: ({ classId, ...params }) => ({
+          url: `/assignments/class/${classId}`,
+          method: "GET",
+          params: toListQueryParams(params),
+        }),
+        providesTags: ["Assignments"],
       }),
-      providesTags: ["Assignments"],
-    }),
-    getCurrentAssignmentForTeacher: builder.query<AssignmentResponse, string>({
-      query: (teacherId) => ({
-        url: `/assignments/teacher/${teacherId}/current`,
-        method: "GET",
-      }),
-      providesTags: ["Assignments"],
-    }),
-    getAssignmentsByClass: builder.query<AssignmentsResponse, AssignmentsByClassParams>({
-      query: ({ classId, ...params }) => ({
-        url: `/assignments/class/${classId}`,
-        method: "GET",
-        params: toListQueryParams(params),
-      }),
-      providesTags: ["Assignments"],
-    }),
-    createAssignment: builder.mutation<AssignmentResponse, CreateAssignmentRequest>({
-      query: (body) => ({
-        url: "/assignments/",
-        method: "POST",
-        body,
-      }),
-      invalidatesTags: ["Assignments", "Teachers"],
-    }),
-    updateAssignment: builder.mutation<
-      AssignmentResponse,
-      { id: string; body: UpdateAssignmentRequest }
-    >({
-      query: ({ id, body }) => ({
-        url: `/assignments/${id}`,
-        method: "PUT",
-        body,
-      }),
-      invalidatesTags: ["Assignments", "Teachers"],
-    }),
-    deleteAssignment: builder.mutation<void, string>({
-      query: (id) => ({
-        url: `/assignments/${id}`,
-        method: "DELETE",
-      }),
-      invalidatesTags: ["Assignments", "Teachers"],
-    }),
-  }),
+    };
+  },
   overrideExisting: false,
 });
 

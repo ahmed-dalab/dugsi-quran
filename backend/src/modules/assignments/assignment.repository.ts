@@ -1,8 +1,8 @@
 import type { AssignmentStatus, Prisma } from "../../../generated/prisma";
 import { prisma } from "../../config/prisma";
 import type { PaginationQuery } from "../../utils/pagination";
+import { paginateQuery } from "../../utils/prismaRepository";
 import { buildPrismaOrSearch } from "../../utils/prismaSearch";
-import { buildPaginationMeta, getPrismaPaginationArgs } from "../../utils/prismaPagination";
 
 const teacherInclude = {
   teacher: {
@@ -72,17 +72,20 @@ export const assignmentRepository = {
           ? classIncludeMinimal
           : teacherInclude;
 
-    const [docs, totalDocs] = await Promise.all([
-      prisma.teacherClassAssignment.findMany({
-        where,
-        ...getPrismaPaginationArgs(pagination),
-        orderBy: { assignedDate: pagination.sortOrder },
-        include,
-      }),
-      prisma.teacherClassAssignment.count({ where }),
-    ]);
+    const orderBy = { assignedDate: pagination.sortOrder } as Prisma.TeacherClassAssignmentOrderByWithRelationInput;
 
-    return { docs, pagination: buildPaginationMeta(totalDocs, pagination) };
+    return paginateQuery({
+      findMany: ({ skip, take }) =>
+        prisma.teacherClassAssignment.findMany({
+          where,
+          skip,
+          take,
+          orderBy,
+          include,
+        }),
+      count: () => prisma.teacherClassAssignment.count({ where }),
+      pagination,
+    });
   },
 
   findById(id: string) {

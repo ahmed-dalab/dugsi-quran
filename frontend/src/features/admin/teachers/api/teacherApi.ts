@@ -1,5 +1,5 @@
 import { baseApi } from "@/app/baseApi";
-import { toListQueryParams, type ListQueryParams } from "@/lib/pagination";
+import { createCrudEndpoints, type ItemResponse } from "@/lib/createCrudApi";
 import type { PaginatedResponse } from "@/types/pagination";
 import type { Teacher } from "../types/teacher.types";
 
@@ -49,57 +49,24 @@ export interface UpdateTeacherRequest {
   };
 }
 
-export interface TeacherResponse {
-  message: string;
-  data: Teacher;
-}
-
+export type TeacherResponse = ItemResponse<Teacher>;
 export type TeachersResponse = PaginatedResponse<Teacher>;
 
 export const teacherApi = baseApi.injectEndpoints({
-  endpoints: (builder) => ({
-    getTeachers: builder.query<TeachersResponse, ListQueryParams | void>({
-      query: (params) => ({
-        url: "/teachers/",
-        method: "GET",
-        params: toListQueryParams(params ?? undefined),
-      }),
-      providesTags: ["Teachers"],
-    }),
-    getTeacher: builder.query<TeacherResponse, string>({
-      query: (id) => ({
-        url: `/teachers/${id}`,
-        method: "GET",
-      }),
-      providesTags: ["Teachers"],
-    }),
-    createTeacher: builder.mutation<TeacherResponse, CreateTeacherRequest>({
-      query: (body) => ({
-        url: "/teachers/",
-        method: "POST",
-        body,
-      }),
-      invalidatesTags: ["Teachers"],
-    }),
-    updateTeacher: builder.mutation<
-      TeacherResponse,
-      { id: string; body: UpdateTeacherRequest }
-    >({
-      query: ({ id, body }) => ({
-        url: `/teachers/${id}`,
-        method: "PUT",
-        body,
-      }),
-      invalidatesTags: ["Teachers"],
-    }),
-    deleteTeacher: builder.mutation<void, string>({
-      query: (id) => ({
-        url: `/teachers/${id}`,
-        method: "DELETE",
-      }),
-      invalidatesTags: ["Teachers"],
-    }),
-  }),
+  endpoints: (builder) => {
+    const crud = createCrudEndpoints<Teacher, CreateTeacherRequest, UpdateTeacherRequest>(builder, {
+      path: "/teachers",
+      tag: "Teachers",
+    });
+
+    return {
+      getTeachers: crud.list,
+      getTeacher: crud.getOne,
+      createTeacher: crud.create,
+      updateTeacher: crud.update,
+      deleteTeacher: crud.remove,
+    };
+  },
   overrideExisting: false,
 });
 

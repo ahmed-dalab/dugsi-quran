@@ -1,8 +1,8 @@
 import type { Prisma } from "../../../generated/prisma";
 import { prisma } from "../../config/prisma";
 import type { PaginationQuery } from "../../utils/pagination";
+import { paginateQuery } from "../../utils/prismaRepository";
 import { buildPrismaOrSearch } from "../../utils/prismaSearch";
-import { buildPaginationMeta, getPrismaPaginationArgs } from "../../utils/prismaPagination";
 
 export const classRepository = {
   create(data: Prisma.ClassCreateInput) {
@@ -15,18 +15,15 @@ export const classRepository = {
       ...(filters.isActive !== undefined ? { isActive: filters.isActive } : {}),
     };
 
-    const orderBy = { [pagination.sortBy ?? "levelOrder"]: pagination.sortOrder } as Prisma.ClassOrderByWithRelationInput;
+    const orderBy = {
+      [pagination.sortBy ?? "levelOrder"]: pagination.sortOrder,
+    } as Prisma.ClassOrderByWithRelationInput;
 
-    const [docs, totalDocs] = await Promise.all([
-      prisma.class.findMany({
-        where,
-        ...getPrismaPaginationArgs(pagination),
-        orderBy,
-      }),
-      prisma.class.count({ where }),
-    ]);
-
-    return { docs, pagination: buildPaginationMeta(totalDocs, pagination) };
+    return paginateQuery({
+      findMany: ({ skip, take }) => prisma.class.findMany({ where, skip, take, orderBy }),
+      count: () => prisma.class.count({ where }),
+      pagination,
+    });
   },
 
   findById(id: string) {

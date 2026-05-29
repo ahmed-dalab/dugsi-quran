@@ -1,5 +1,5 @@
 import { baseApi } from "@/app/baseApi";
-import { toListQueryParams, type ListQueryParams } from "@/lib/pagination";
+import { createCrudEndpoints, type ItemResponse } from "@/lib/createCrudApi";
 import type { PaginatedResponse } from "@/types/pagination";
 import type { ClassItem } from "../types/class.types";
 
@@ -19,57 +19,24 @@ export interface UpdateClassRequest {
   isActive?: boolean;
 }
 
-export interface ClassResponse {
-  message: string;
-  data: ClassItem;
-}
-
+export type ClassResponse = ItemResponse<ClassItem>;
 export type ClassesResponse = PaginatedResponse<ClassItem>;
 
 export const classApi = baseApi.injectEndpoints({
-  endpoints: (builder) => ({
-    getClasses: builder.query<ClassesResponse, ListQueryParams | void>({
-      query: (params) => ({
-        url: "/classes/",
-        method: "GET",
-        params: toListQueryParams(params ?? undefined),
-      }),
-      providesTags: ["Classes"],
-    }),
-    getClass: builder.query<ClassResponse, string>({
-      query: (id) => ({
-        url: `/classes/${id}`,
-        method: "GET",
-      }),
-      providesTags: ["Classes"],
-    }),
-    createClass: builder.mutation<ClassResponse, CreateClassRequest>({
-      query: (body) => ({
-        url: "/classes/",
-        method: "POST",
-        body,
-      }),
-      invalidatesTags: ["Classes"],
-    }),
-    updateClass: builder.mutation<
-      ClassResponse,
-      { id: string; body: UpdateClassRequest }
-    >({
-      query: ({ id, body }) => ({
-        url: `/classes/${id}`,
-        method: "PUT",
-        body,
-      }),
-      invalidatesTags: ["Classes"],
-    }),
-    deleteClass: builder.mutation<void, string>({
-      query: (id) => ({
-        url: `/classes/${id}`,
-        method: "DELETE",
-      }),
-      invalidatesTags: ["Classes"],
-    }),
-  }),
+  endpoints: (builder) => {
+    const crud = createCrudEndpoints<ClassItem, CreateClassRequest, UpdateClassRequest>(builder, {
+      path: "/classes",
+      tag: "Classes",
+    });
+
+    return {
+      getClasses: crud.list,
+      getClass: crud.getOne,
+      createClass: crud.create,
+      updateClass: crud.update,
+      deleteClass: crud.remove,
+    };
+  },
   overrideExisting: false,
 });
 

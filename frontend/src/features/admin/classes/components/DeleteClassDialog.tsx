@@ -2,6 +2,7 @@ import { Trash2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
+import { handleMutationError } from "@/lib/apiError";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -32,9 +33,8 @@ export default function DeleteClassDialog({
       await deleteClass(classItem._id).unwrap();
       toast.success(`Class "${classItem.name}" deleted successfully`);
       setOpen(false);
-    } catch (error: any) {
-      console.error("Delete class failed:", error);
-      toast.error(error?.data?.message || "Failed to delete class");
+    } catch (error: unknown) {
+      handleMutationError("Delete class failed", error, "Failed to delete class");
     }
   }
 

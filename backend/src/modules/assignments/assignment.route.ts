@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { validateRequest } from "../../middlewares/validateRequest";
 import {
   createAssignment,
   deleteAssignment,
@@ -9,19 +10,35 @@ import {
   getCurrentAssignmentForTeacher,
   updateAssignment,
 } from "./assignment.controller";
+import {
+  assignmentParamsSchema,
+  classIdParamsSchema,
+  createAssignmentSchema,
+  teacherIdParamsSchema,
+  updateAssignmentSchema,
+} from "./assignment.validations";
 
 const assignmentRouter = Router();
 
-// Basic CRUD routes
-assignmentRouter.post("/", createAssignment);
+assignmentRouter.post("/", validateRequest(createAssignmentSchema), createAssignment);
 assignmentRouter.get("/", getAssignments);
-assignmentRouter.get("/:id", getAssignment);
-assignmentRouter.put("/:id", updateAssignment);
-assignmentRouter.delete("/:id", deleteAssignment);
-
-// Additional routes for specific queries
-assignmentRouter.get("/teacher/:teacherId", getAssignmentsByTeacher);
-assignmentRouter.get("/teacher/:teacherId/current", getCurrentAssignmentForTeacher);
-assignmentRouter.get("/class/:classId", getAssignmentsByClass);
+assignmentRouter.get(
+  "/teacher/:teacherId",
+  validateRequest(teacherIdParamsSchema),
+  getAssignmentsByTeacher
+);
+assignmentRouter.get(
+  "/teacher/:teacherId/current",
+  validateRequest(teacherIdParamsSchema),
+  getCurrentAssignmentForTeacher
+);
+assignmentRouter.get(
+  "/class/:classId",
+  validateRequest(classIdParamsSchema),
+  getAssignmentsByClass
+);
+assignmentRouter.get("/:id", validateRequest(assignmentParamsSchema), getAssignment);
+assignmentRouter.put("/:id", validateRequest(updateAssignmentSchema), updateAssignment);
+assignmentRouter.delete("/:id", validateRequest(assignmentParamsSchema), deleteAssignment);
 
 export default assignmentRouter;

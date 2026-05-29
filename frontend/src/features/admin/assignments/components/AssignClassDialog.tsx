@@ -6,6 +6,7 @@ import { toast } from "sonner";
 
 import { useGetClassesQuery } from "@/features/admin/classes/api/classApi";
 import { useGetTeachersQuery } from "@/features/admin/teachers/api/teacherApi";
+import { handleMutationError } from "@/lib/apiError";
 import { LIST_ALL_PARAMS } from "@/lib/pagination";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -77,9 +78,8 @@ export default function AssignClassDialog({
       toast.success(`Successfully assigned ${teacherName} to ${className}`);
       form.reset();
       setOpen(false);
-    } catch (error: any) {
-      console.error("Create assignment failed:", error);
-      toast.error(error?.data?.message || "Failed to create assignment");
+    } catch (error: unknown) {
+      handleMutationError("Create assignment failed", error, "Failed to create assignment");
     }
   }
 

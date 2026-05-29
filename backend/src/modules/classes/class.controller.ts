@@ -1,7 +1,7 @@
 import type { Request, Response } from "express";
-import { assertFound } from "../../shared/errors/assertFound";
 import { asyncHandler } from "../../utils/asyncHandler";
 import { getIdParam } from "../../utils/getIdParam";
+import { respondCreated, respondPaginated, respondResource } from "../../utils/respond";
 import {
   createClassService,
   deleteClassService,
@@ -12,55 +12,34 @@ import {
 
 export const createClass = asyncHandler(async (req: Request, res: Response) => {
   const classItem = await createClassService(req.body);
-
-  res.status(201).json({
-    message: "Class created successfully",
-    data: classItem,
-  });
+  respondCreated(res, "Class created successfully", classItem);
 });
 
 export const getClasses = asyncHandler(async (req: Request, res: Response) => {
   const result = await getClassesService(req.query);
-
-  res.status(200).json({
-    message: "Classes retrieved successfully",
-    data: result.data,
-    pagination: result.pagination,
-  });
+  respondPaginated(res, "Classes retrieved successfully", result);
 });
 
 export const getClass = asyncHandler(async (req: Request, res: Response) => {
-  const classItem = assertFound(
-    await getClassByIdService(getIdParam(req.params.id)),
-    "Class not found"
-  );
-
-  res.status(200).json({
+  await respondResource(res, {
     message: "Class retrieved successfully",
-    data: classItem,
+    notFoundMessage: "Class not found",
+    fetch: () => getClassByIdService(getIdParam(req.params.id)),
   });
 });
 
 export const updateClass = asyncHandler(async (req: Request, res: Response) => {
-  const classItem = assertFound(
-    await updateClassService(getIdParam(req.params.id), req.body),
-    "Class not found"
-  );
-
-  res.status(200).json({
+  await respondResource(res, {
     message: "Class updated successfully",
-    data: classItem,
+    notFoundMessage: "Class not found",
+    fetch: () => updateClassService(getIdParam(req.params.id), req.body),
   });
 });
 
 export const deleteClass = asyncHandler(async (req: Request, res: Response) => {
-  const classItem = assertFound(
-    await deleteClassService(getIdParam(req.params.id)),
-    "Class not found"
-  );
-
-  res.status(200).json({
+  await respondResource(res, {
     message: "Class deleted successfully",
-    data: classItem,
+    notFoundMessage: "Class not found",
+    fetch: () => deleteClassService(getIdParam(req.params.id)),
   });
 });

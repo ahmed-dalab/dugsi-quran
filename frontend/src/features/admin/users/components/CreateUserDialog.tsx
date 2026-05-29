@@ -4,6 +4,7 @@ import { Controller, useForm } from "react-hook-form";
 import { UserPlus } from "lucide-react";
 import { toast } from "sonner";
 
+import { handleMutationError } from "@/lib/apiError";
 import { useCreateUserMutation } from "../api/userApi";
 import {
   createUserSchema,
@@ -63,9 +64,8 @@ export default function CreateUserDialog({ triggerClassName }: CreateUserDialogP
         isActive: true,
       });
       setOpen(false);
-    } catch (error: any) {
-      console.error("Create user failed:", error);
-      toast.error(error?.data?.message || "Failed to create user");
+    } catch (error: unknown) {
+      handleMutationError("Create user failed", error, "Failed to create user");
     }
   }
 

@@ -4,6 +4,7 @@ import { Controller, useForm } from "react-hook-form";
 import { Edit } from "lucide-react";
 import { toast } from "sonner";
 
+import { handleMutationError } from "@/lib/apiError";
 import { useUpdateUserMutation } from "../api/userApi";
 import {
   editUserSchema,
@@ -60,9 +61,8 @@ export default function EditUserDialog({ user, triggerClassName }: EditUserDialo
       
       toast.success(`User "${updatedUser.data.name}" updated successfully`);
       setOpen(false);
-    } catch (error: any) {
-      console.error("Update user failed:", error);
-      toast.error(error?.data?.message || "Failed to update user");
+    } catch (error: unknown) {
+      handleMutationError("Update user failed", error, "Failed to update user");
     }
   }
 

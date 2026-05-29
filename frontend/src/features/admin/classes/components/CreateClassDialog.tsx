@@ -4,6 +4,7 @@ import { Plus } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
+import { handleMutationError } from "@/lib/apiError";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -66,9 +67,8 @@ export default function CreateClassDialog({
         isActive: true,
       });
       setOpen(false);
-    } catch (error: any) {
-      console.error("Create class failed:", error);
-      toast.error(error?.data?.message || "Failed to create class");
+    } catch (error: unknown) {
+      handleMutationError("Create class failed", error, "Failed to create class");
     }
   }
 

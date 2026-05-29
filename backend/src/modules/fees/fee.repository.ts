@@ -1,8 +1,8 @@
 import type { FeePaymentStatus, Prisma } from "../../../generated/prisma";
 import { prisma } from "../../config/prisma";
 import type { PaginationQuery } from "../../utils/pagination";
+import { paginateQuery } from "../../utils/prismaRepository";
 import { buildPrismaOrSearch } from "../../utils/prismaSearch";
-import { buildPaginationMeta, getPrismaPaginationArgs } from "../../utils/prismaPagination";
 
 const feeInclude = {
   student: { select: { id: true, fullName: true } },
@@ -37,17 +37,18 @@ export const feeRepository = {
       ...(filters.year ? { year: filters.year } : {}),
     };
 
-    const [docs, totalDocs] = await Promise.all([
-      prisma.feePayment.findMany({
-        where,
-        ...getPrismaPaginationArgs(pagination),
-        orderBy: [{ year: "desc" }, { month: "desc" }, { createdAt: "desc" }],
-        include: feeInclude,
-      }),
-      prisma.feePayment.count({ where }),
-    ]);
-
-    return { docs, pagination: buildPaginationMeta(totalDocs, pagination) };
+    return paginateQuery({
+      findMany: ({ skip, take }) =>
+        prisma.feePayment.findMany({
+          where,
+          skip,
+          take,
+          orderBy: [{ year: "desc" }, { month: "desc" }, { createdAt: "desc" }],
+          include: feeInclude,
+        }),
+      count: () => prisma.feePayment.count({ where }),
+      pagination,
+    });
   },
 
   findById(id: string) {
