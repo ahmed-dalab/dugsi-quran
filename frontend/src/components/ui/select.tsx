@@ -6,6 +6,16 @@ import ReactSelect, {
 } from "react-select";
 import { cn } from "@/lib/utils";
 
+const REACT_SELECT_PORTAL_SELECTOR = ".app-select__menu-portal";
+
+export function isReactSelectPortalTarget(target: EventTarget | null) {
+  if (!(target instanceof Element)) {
+    return false;
+  }
+
+  return Boolean(target.closest(REACT_SELECT_PORTAL_SELECTOR));
+}
+
 export type SelectOption = {
   value: string;
   label: string;
@@ -91,6 +101,7 @@ const buildStyles = (invalid?: boolean): StylesConfig<SelectOption, false> => ({
     boxShadow: "0 10px 30px -12px rgb(15 23 42 / 0.25)",
     overflow: "hidden",
     zIndex: 50,
+    pointerEvents: "auto",
   }),
   menuList: (base) => ({
     ...base,
@@ -186,7 +197,11 @@ function AppSelect({
     menuPosition: "fixed",
     styles: {
       ...buildStyles(invalid),
-      menuPortal: (base) => ({ ...base, zIndex: 9999 }),
+      menuPortal: (base) => ({
+        ...base,
+        zIndex: 9999,
+        pointerEvents: "auto",
+      }),
     },
     noOptionsMessage: () => noOptionsMessage,
     classNamePrefix: "app-select",

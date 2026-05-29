@@ -14,8 +14,10 @@ const attendanceInclude = {
   },
 };
 
-const historyInclude = {
+const listInclude = {
+  class: { select: { id: true, name: true, levelOrder: true } },
   takenBy: { select: { id: true, name: true, email: true } },
+  records: { select: { status: true } },
 };
 
 export const attendanceRepository = {
@@ -61,9 +63,12 @@ export const attendanceRepository = {
     });
   },
 
-  async findHistoryByClass(classId: string, pagination: PaginationQuery, filters: { fromDate?: string; toDate?: string }) {
+  async findPaginated(
+    pagination: PaginationQuery,
+    filters: { classId?: string; fromDate?: string; toDate?: string }
+  ) {
     const where: Prisma.AttendanceWhereInput = {
-      classId,
+      ...(filters.classId ? { classId: filters.classId } : {}),
       ...buildPrismaOrSearch(pagination.search, ["date"]),
       ...(filters.fromDate || filters.toDate
         ? {
@@ -80,12 +85,16 @@ export const attendanceRepository = {
         where,
         ...getPrismaPaginationArgs(pagination),
         orderBy: { date: pagination.sortOrder },
-        include: historyInclude,
+        include: listInclude,
       }),
       prisma.attendance.count({ where }),
     ]);
 
     return { docs, pagination: buildPaginationMeta(totalDocs, pagination) };
+  },
+
+  async findHistoryByClass(classId: string, pagination: PaginationQuery, filters: { fromDate?: string; toDate?: string }) {
+    return this.findPaginated(pagination, { classId, ...filters });
   },
 
   attendanceStatsSince(dateIso: string) {

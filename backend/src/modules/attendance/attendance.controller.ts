@@ -6,6 +6,7 @@ import { getIdParam } from "../../utils/getIdParam";
 import {
   getAttendanceByClassAndDateService,
   getAttendanceHistoryByClassService,
+  getAttendanceListService,
   takeAttendanceService,
 } from "./attendance.service";
 
@@ -18,6 +19,16 @@ export const takeAttendance = asyncHandler(async (req: Request, res: Response) =
   res.status(201).json({
     message: "Attendance saved successfully",
     data: attendance,
+  });
+});
+
+export const getAttendanceList = asyncHandler(async (req: Request, res: Response) => {
+  const result = await getAttendanceListService(req.query);
+
+  res.status(200).json({
+    message: "Attendance records retrieved successfully",
+    data: result.data,
+    pagination: result.pagination,
   });
 });
 

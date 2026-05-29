@@ -3,6 +3,7 @@ import { format } from "date-fns";
 import { Link, useParams } from "react-router";
 
 import { Button } from "@/components/ui/button";
+import { DetailPageSkeleton } from "@/components/skeletons";
 import { AssignmentHistoryContent } from "@/features/admin/assignments/components/AssignmentHistory";
 import { useGetTeacherQuery } from "../api/teacherApi";
 import type { Teacher } from "../types/teacher.types";
@@ -27,7 +28,7 @@ export default function TeacherDetails() {
   }
 
   if (isLoading) {
-    return <div>Loading teacher details...</div>;
+    return <DetailPageSkeleton />;
   }
 
   if (isError || !data?.data) {

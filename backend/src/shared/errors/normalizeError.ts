@@ -1,5 +1,6 @@
 import jwt from "jsonwebtoken";
 import { Prisma } from "../../../generated/prisma";
+import { env } from "../../config/env";
 import { AppError } from "./AppError";
 
 export function normalizeError(error: unknown): AppError {
@@ -8,10 +9,27 @@ export function normalizeError(error: unknown): AppError {
   }
 
   if (error instanceof Prisma.PrismaClientValidationError) {
-    return new AppError(400, "Invalid data provided");
+    if (env.NODE_ENV === "development") {
+      console.error("[Prisma validation error]", error.message);
+    }
+
+    return new AppError(400, "Invalid data provided", {
+      errors:
+        env.NODE_ENV === "development"
+          ? [{ field: "request", message: error.message }]
+          : undefined,
+    });
   }
 
   if (error instanceof Prisma.PrismaClientKnownRequestError) {
+    if (env.NODE_ENV === "development") {
+      console.error("[Prisma request error]", {
+        code: error.code,
+        meta: error.meta,
+        message: error.message,
+      });
+    }
+
     if (error.code === "P2002") {
       return new AppError(409, "Duplicate value already exists");
     }

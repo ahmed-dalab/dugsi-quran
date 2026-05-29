@@ -5,6 +5,7 @@ export const PATHS = {
 
   admin: "/admin",
   adminAttendance: "/admin/attendance",
+  adminAttendanceTake: "/admin/attendance/take",
   adminFees: "/admin/fees",
   adminReports: "/admin/reports",
   teacher: "/teacher",

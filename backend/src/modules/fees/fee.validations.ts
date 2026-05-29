@@ -12,10 +12,6 @@ export const feeParamsSchema = z.object({
 export const createFeeSchema = z.object({
   body: z.object({
     studentId: uuidSchema,
-    classId: uuidSchema,
-    month: z.number().int().min(1).max(12),
-    year: z.number().int().min(2000),
-    amountDue: z.number().min(0),
     amountPaid: z.number().min(0).default(0),
     paymentDate: z.coerce.date().nullable().optional(),
     note: z.string().max(500).nullable().optional(),
@@ -27,9 +23,6 @@ export const createFeeSchema = z.object({
 export const updateFeeSchema = z.object({
   body: z
     .object({
-      month: z.number().int().min(1).max(12).optional(),
-      year: z.number().int().min(2000).optional(),
-      amountDue: z.number().min(0).optional(),
       amountPaid: z.number().min(0).optional(),
       paymentDate: z.coerce.date().nullable().optional(),
       note: z.string().max(500).nullable().optional(),

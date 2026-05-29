@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { useAppDispatch, useAppSelector } from "@/app/hooks";
+import { SessionSkeleton } from "@/components/skeletons";
 import { clearAuth, setBootstrapping, setCredentials } from "@/features/auth/authSlice";
 import { useRefreshMutation } from "@/features/auth/authApi";
 
@@ -46,7 +47,7 @@ export default function AuthBootstrap({ children }: Props) {
   }, [dispatch, refresh]);
 
   if (isBootstrapping) {
-    return <div>Loading...</div>;
+    return <SessionSkeleton />;
   }
 
   return <>{children}</>;

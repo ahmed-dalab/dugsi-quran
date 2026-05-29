@@ -15,7 +15,14 @@ export const errorHandler = (
 ) => {
   const appError = normalizeError(error);
 
-  if (!appError.isOperational) {
+  if (env.NODE_ENV === "development") {
+    console.error("[API Error]", {
+      statusCode: appError.statusCode,
+      message: appError.message,
+      errors: appError.errors,
+      original: error instanceof Error ? error.message : error,
+    });
+  } else if (!appError.isOperational) {
     console.error(error);
   }
 

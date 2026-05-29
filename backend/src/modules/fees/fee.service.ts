@@ -5,11 +5,16 @@ import { getQueryString, parsePaginationQuery } from "../../utils/pagination";
 import { mapFeeRecord } from "../../utils/mappers";
 import { classRepository } from "../classes/class.repository";
 import { studentRepository } from "../students/student.repository";
-import type { FeePaymentStatus, IFeePayment } from "./fee.model";
+import type { FeePaymentStatus } from "./fee.model";
 import { feeRepository } from "./fee.repository";
 
-type CreateFeePayload = Omit<IFeePayment, "status">;
-type UpdateFeePayload = Partial<Omit<IFeePayment, "status">>;
+type CreateFeePayload = {
+  studentId: string;
+  amountPaid?: number;
+  paymentDate?: Date | null;
+  note?: string | null;
+};
+type UpdateFeePayload = Partial<CreateFeePayload>;
 
 const deriveStatus = (amountDue: number, amountPaid: number): FeePaymentStatus => {
   if (amountPaid <= 0) {
@@ -33,39 +38,38 @@ const normalizeCreatePayload = async (payload: CreateFeePayload) => {
     throw new AppError(404, "Student not found");
   }
 
-  const classId = payload.classId ?? student.classId;
+  const classId = student.classId;
 
-  if (!isValidId(classId)) {
-    throw new AppError(400, "Invalid class id");
+  const classItem = await classRepository.findById(classId);
+  if (!classItem) {
+    throw new AppError(404, "Class not found");
   }
 
-  if (student.classId !== classId) {
-    throw new AppError(400, "Selected class does not match student's class");
-  }
-
-  let amountDue = payload.amountDue;
-
-  if (amountDue === 0) {
-    const classItem = await classRepository.findById(classId);
-    if (!classItem) {
-      throw new AppError(404, "Class not found");
-    }
-    amountDue = classItem.monthlyFee;
-  }
-
+  const now = new Date();
+  const month = now.getMonth() + 1;
+  const year = now.getFullYear();
+  const amountDue = classItem.monthlyFee;
   const amountPaid = payload.amountPaid ?? 0;
 
+  const existing = await feeRepository.findByStudentPeriod(payload.studentId, month, year);
+  if (existing) {
+    throw new AppError(409, "This student already has a fee record for the current month");
+  }
+
   if (amountPaid > amountDue) {
-    throw new AppError(400, "Amount paid cannot exceed amount due");
+    throw new AppError(400, "Amount paid cannot exceed the class monthly fee");
   }
 
   return {
-    ...payload,
+    studentId: payload.studentId,
     classId,
+    month,
+    year,
     amountDue,
     amountPaid,
     status: deriveStatus(amountDue, amountPaid),
-    paymentDate: amountPaid > 0 ? payload.paymentDate ?? new Date() : null,
+    paymentDate: amountPaid > 0 ? payload.paymentDate ?? now : null,
+    note: payload.note?.trim() || undefined,
   };
 };
 
@@ -129,21 +133,20 @@ export const updateFeeService = async (id: string, payload: UpdateFeePayload) =>
     return null;
   }
 
-  const amountDue = payload.amountDue ?? existing.amountDue;
+  const amountDue = existing.amountDue;
   const amountPaid = payload.amountPaid ?? existing.amountPaid;
 
   if (amountPaid > amountDue) {
-    throw new AppError(400, "Amount paid cannot exceed amount due");
+    throw new AppError(400, "Amount paid cannot exceed the class monthly fee");
   }
 
   const status = deriveStatus(amountDue, amountPaid);
 
-  const { receivedBy: _receivedBy, ...feeFields } = payload;
-
   const updated = await feeRepository.update(id, {
-    ...feeFields,
+    amountPaid,
     status,
     paymentDate: amountPaid > 0 ? payload.paymentDate ?? existing.paymentDate ?? new Date() : null,
+    ...(payload.note !== undefined ? { note: payload.note?.trim() || null } : {}),
   });
 
   return mapFeeRecord(updated);

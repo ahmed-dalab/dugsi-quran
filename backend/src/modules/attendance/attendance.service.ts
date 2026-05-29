@@ -86,6 +86,22 @@ export const getAttendanceByClassAndDateService = async (classId: string, date: 
   return attendance ? mapAttendanceRecord(attendance) : null;
 };
 
+export const getAttendanceListService = async (query: Request["query"]) => {
+  const pagination = parsePaginationQuery(query, { sortBy: "date", sortOrder: "desc" });
+  const classId = getQueryString(query, "classId");
+
+  const result = await attendanceRepository.findPaginated(pagination, {
+    classId: classId && isValidId(classId) ? classId : undefined,
+    fromDate: getQueryString(query, "fromDate"),
+    toDate: getQueryString(query, "toDate"),
+  });
+
+  return {
+    data: result.docs.map(mapAttendanceRecord),
+    pagination: result.pagination,
+  };
+};
+
 export const getAttendanceHistoryByClassService = async (classId: string, query: Request["query"]) => {
   if (!isValidId(classId)) {
     return emptyPaginatedList();

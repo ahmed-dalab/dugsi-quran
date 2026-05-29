@@ -23,6 +23,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { PasswordInput } from "@/components/ui/password-input";
 import { AppSelect } from "@/components/ui/select";
+import { getApiErrorMessage, logDevError } from "@/lib/apiError";
 import { useCreateTeacherMutation } from "../api/teacherApi";
 import {
   createTeacherSchema,
@@ -78,9 +79,9 @@ export default function CreateTeacherDialog({
         status: "active",
       });
       setOpen(false);
-    } catch (error: any) {
-      console.error("Create teacher failed:", error);
-      toast.error(error?.data?.message || "Failed to create teacher");
+    } catch (error: unknown) {
+      logDevError("Create teacher failed", error);
+      toast.error(getApiErrorMessage(error, "Failed to create teacher"));
     }
   }
 

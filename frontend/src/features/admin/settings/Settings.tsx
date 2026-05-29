@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import { useAppSelector } from "@/app/hooks";
+import { SettingsSkeleton } from "@/components/skeletons";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
@@ -85,12 +86,8 @@ export default function Settings() {
     setIsEditing(false);
   }
 
-  if (isBootstrapping) {
-    return <div>Loading session...</div>;
-  }
-
-  if (isLoading) {
-    return <div>Loading settings...</div>;
+  if (isBootstrapping || isLoading) {
+    return <SettingsSkeleton />;
   }
 
   if (isError) {

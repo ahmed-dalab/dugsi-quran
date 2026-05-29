@@ -1,6 +1,7 @@
 import { History } from "lucide-react";
 import { useState } from "react";
 import { LIST_ALL_PARAMS } from "@/lib/pagination";
+import { TableSkeleton } from "@/components/skeletons";
 import { useGetAssignmentsByTeacherQuery } from "../api/assignmentApi";
 import type { TeacherClassAssignment } from "../types/assignment.types";
 import { Button } from "@/components/ui/button";
@@ -68,11 +69,7 @@ export function AssignmentHistoryContent({ teacherId }: AssignmentHistoryContent
   };
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center py-8">
-        <div>Loading assignment history...</div>
-      </div>
-    );
+    return <TableSkeleton columns={4} rows={4} variant="inline" />;
   }
 
   if (!assignmentsData?.data || assignmentsData.data.length === 0) {

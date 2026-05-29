@@ -1,11 +1,13 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Controller, useForm } from "react-hook-form";
 import { HandCoins } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
+import { useGetClassesQuery } from "@/features/admin/classes/api/classApi";
 import { useGetStudentsQuery } from "@/features/admin/students/api/studentApi";
 import { LIST_ALL_PARAMS } from "@/lib/pagination";
+import { getApiErrorMessage, logDevError } from "@/lib/apiError";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -27,37 +29,80 @@ interface CreateFeeDialogProps {
 }
 
 const now = new Date();
+const today = now.toISOString().slice(0, 10);
+const currentPeriodLabel = now.toLocaleString(undefined, { month: "long", year: "numeric" });
+
+const formatCurrency = (value: number) =>
+  `$${value.toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
 
 export default function CreateFeeDialog({ triggerClassName }: CreateFeeDialogProps) {
   const [open, setOpen] = useState(false);
   const [createFee, { isLoading }] = useCreateFeeMutation();
-  const { data: studentsData } = useGetStudentsQuery({ ...LIST_ALL_PARAMS, status: "active" });
+
+  const { data: studentsData, isLoading: isStudentsLoading } = useGetStudentsQuery(
+    { ...LIST_ALL_PARAMS, status: "active" },
+    { skip: !open }
+  );
+
+  const { data: classesData } = useGetClassesQuery(LIST_ALL_PARAMS, { skip: !open });
 
   const form = useForm<CreateFeeFormValues>({
     resolver: zodResolver(createFeeSchema),
     defaultValues: {
       studentId: "",
-      classId: "",
-      month: now.getMonth() + 1,
-      year: now.getFullYear(),
-      amountDue: 0,
       amountPaid: 0,
-      paymentDate: now.toISOString().slice(0, 10),
+      paymentDate: today,
       note: "",
     },
   });
 
   const selectedStudentId = form.watch("studentId");
 
+  const studentOptions = useMemo(
+    () =>
+      studentsData?.data.map((student) => ({
+        value: student._id,
+        label: student.fullName,
+      })) ?? [],
+    [studentsData?.data]
+  );
+
+  const selectedStudent = useMemo(
+    () => studentsData?.data.find((student) => student._id === selectedStudentId),
+    [studentsData?.data, selectedStudentId]
+  );
+
+  const selectedClass = useMemo(() => {
+    if (!selectedStudent) {
+      return null;
+    }
+
+    const classId =
+      typeof selectedStudent.classId === "string"
+        ? selectedStudent.classId
+        : selectedStudent.classId._id;
+
+    return classesData?.data.find((classItem) => classItem._id === classId) ?? null;
+  }, [selectedStudent, classesData?.data]);
+
+  useEffect(() => {
+    if (!selectedClass) {
+      return;
+    }
+
+    form.setValue("amountPaid", selectedClass.monthlyFee, { shouldValidate: true });
+  }, [selectedStudentId, selectedClass, form]);
+
   async function onSubmit(values: CreateFeeFormValues) {
     try {
-      if (values.amountPaid > values.amountDue) {
-        toast.error("Amount paid cannot exceed amount due");
+      if (selectedClass && values.amountPaid > selectedClass.monthlyFee) {
+        toast.error("Amount paid cannot exceed the class monthly fee");
         return;
       }
 
       const payload = {
-        ...values,
+        studentId: values.studentId,
+        amountPaid: values.amountPaid,
         paymentDate: values.amountPaid > 0 ? values.paymentDate : null,
         note: values.note?.trim() ? values.note.trim() : null,
       };
@@ -68,21 +113,17 @@ export default function CreateFeeDialog({ triggerClassName }: CreateFeeDialogPro
           ? "student"
           : newFee.data.studentId.fullName;
 
-      toast.success(`Fee record created for ${studentName}`);
+      toast.success(`${studentName} paid fee for ${currentPeriodLabel}`);
       form.reset({
         studentId: "",
-        classId: "",
-        month: now.getMonth() + 1,
-        year: now.getFullYear(),
-        amountDue: 0,
         amountPaid: 0,
-        paymentDate: now.toISOString().slice(0, 10),
+        paymentDate: today,
         note: "",
       });
       setOpen(false);
-    } catch (error: any) {
-      console.error("Create fee failed:", error);
-      toast.error(error?.data?.message || "Failed to create fee record");
+    } catch (error: unknown) {
+      logDevError("Create fee failed", error);
+      toast.error(getApiErrorMessage(error, "Failed to create fee record"));
     }
   }
 
@@ -97,9 +138,9 @@ export default function CreateFeeDialog({ triggerClassName }: CreateFeeDialogPro
 
       <DialogContent className="max-w-[calc(100%-1rem)] sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>Add Fee Payment</DialogTitle>
+          <DialogTitle>Record Fee Payment</DialogTitle>
           <DialogDescription>
-            Create a monthly fee record for a student.
+            Record that a student paid their class fee for {currentPeriodLabel}.
           </DialogDescription>
         </DialogHeader>
 
@@ -110,137 +151,64 @@ export default function CreateFeeDialog({ triggerClassName }: CreateFeeDialogPro
               control={form.control}
               render={({ field, fieldState }) => (
                 <Field data-invalid={fieldState.invalid}>
-                  <FieldLabel>Student</FieldLabel>
+                  <FieldLabel htmlFor="fee-student">Student</FieldLabel>
                   <AppSelect
-                    value={field.value}
-                    onChange={(value) => {
-                      field.onChange(value ?? "");
-                      const student = studentsData?.data.find((item) => item._id === value);
-                      if (!student) return;
-                      const classId =
-                        typeof student.classId === "string"
-                          ? student.classId
-                          : student.classId._id;
-                      form.setValue("classId", classId, { shouldValidate: true });
-                    }}
+                    id="fee-student"
+                    value={field.value || null}
+                    onChange={(value) => field.onChange(value ?? "")}
                     invalid={fieldState.invalid}
-                    placeholder="Search and select student"
-                    options={
-                      studentsData?.data.map((student) => ({
-                        value: student._id,
-                        label: student.fullName,
-                      })) ?? []
+                    placeholder={
+                      isStudentsLoading ? "Loading students..." : "Search and select student"
                     }
+                    isLoading={isStudentsLoading}
+                    isDisabled={isStudentsLoading}
+                    options={studentOptions}
                   />
                   {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
                 </Field>
               )}
             />
 
+            {selectedStudent && selectedClass ? (
+              <div className="rounded-xl border border-border bg-muted/40 p-4 text-sm">
+                <p className="font-medium">{selectedStudent.fullName}</p>
+                <p className="mt-1 text-muted-foreground">
+                  Class: <span className="text-foreground">{selectedClass.name}</span>
+                </p>
+                <p className="text-muted-foreground">
+                  Period: <span className="text-foreground">{currentPeriodLabel}</span>
+                </p>
+                <p className="text-muted-foreground">
+                  Class fee:{" "}
+                  <span className="font-medium text-foreground">
+                    {formatCurrency(selectedClass.monthlyFee)}
+                  </span>
+                </p>
+              </div>
+            ) : selectedStudentId ? (
+              <div className="rounded-xl border border-dashed p-4 text-sm text-muted-foreground">
+                Could not load class fee for this student.
+              </div>
+            ) : null}
+
             <Controller
-              name="classId"
+              name="amountPaid"
               control={form.control}
-              render={({ field, fieldState }) => {
-                const selectedStudent = studentsData?.data.find((s) => s._id === selectedStudentId);
-                const className =
-                  selectedStudent && typeof selectedStudent.classId !== "string"
-                    ? selectedStudent.classId.name
-                    : "";
-
-                return (
-                  <Field data-invalid={fieldState.invalid}>
-                    <FieldLabel htmlFor="fee-class">Class</FieldLabel>
-                    <Input
-                      id="fee-class"
-                      value={className}
-                      placeholder="Class auto-filled from student"
-                      readOnly
-                    />
-                    <input type="hidden" {...field} />
-                    {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-                  </Field>
-                );
-              }}
+              render={({ field, fieldState }) => (
+                <Field data-invalid={fieldState.invalid}>
+                  <FieldLabel htmlFor="fee-amount-paid">Amount Paid</FieldLabel>
+                  <Input
+                    {...field}
+                    id="fee-amount-paid"
+                    type="number"
+                    min={0}
+                    step="0.01"
+                    onChange={(event) => field.onChange(event.target.valueAsNumber)}
+                  />
+                  {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                </Field>
+              )}
             />
-
-            <div className="grid gap-4 sm:grid-cols-2">
-              <Controller
-                name="month"
-                control={form.control}
-                render={({ field, fieldState }) => (
-                  <Field data-invalid={fieldState.invalid}>
-                    <FieldLabel htmlFor="fee-month">Month</FieldLabel>
-                    <Input
-                      {...field}
-                      id="fee-month"
-                      type="number"
-                      min={1}
-                      max={12}
-                      onChange={(event) => field.onChange(event.target.valueAsNumber)}
-                    />
-                    {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-                  </Field>
-                )}
-              />
-
-              <Controller
-                name="year"
-                control={form.control}
-                render={({ field, fieldState }) => (
-                  <Field data-invalid={fieldState.invalid}>
-                    <FieldLabel htmlFor="fee-year">Year</FieldLabel>
-                    <Input
-                      {...field}
-                      id="fee-year"
-                      type="number"
-                      min={2000}
-                      onChange={(event) => field.onChange(event.target.valueAsNumber)}
-                    />
-                    {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-                  </Field>
-                )}
-              />
-            </div>
-
-            <div className="grid gap-4 sm:grid-cols-2">
-              <Controller
-                name="amountDue"
-                control={form.control}
-                render={({ field, fieldState }) => (
-                  <Field data-invalid={fieldState.invalid}>
-                    <FieldLabel htmlFor="fee-amount-due">Amount Due</FieldLabel>
-                    <Input
-                      {...field}
-                      id="fee-amount-due"
-                      type="number"
-                      min={0}
-                      step="0.01"
-                      onChange={(event) => field.onChange(event.target.valueAsNumber)}
-                    />
-                    {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-                  </Field>
-                )}
-              />
-
-              <Controller
-                name="amountPaid"
-                control={form.control}
-                render={({ field, fieldState }) => (
-                  <Field data-invalid={fieldState.invalid}>
-                    <FieldLabel htmlFor="fee-amount-paid">Amount Paid</FieldLabel>
-                    <Input
-                      {...field}
-                      id="fee-amount-paid"
-                      type="number"
-                      min={0}
-                      step="0.01"
-                      onChange={(event) => field.onChange(event.target.valueAsNumber)}
-                    />
-                    {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-                  </Field>
-                )}
-              />
-            </div>
 
             <Controller
               name="paymentDate"
@@ -270,7 +238,7 @@ export default function CreateFeeDialog({ triggerClassName }: CreateFeeDialogPro
 
         <DialogFooter>
           <Button type="submit" form="create-fee-form" disabled={isLoading} className="w-full sm:w-auto">
-            {isLoading ? "Creating..." : "Create Fee"}
+            {isLoading ? "Saving..." : "Record Payment"}
           </Button>
         </DialogFooter>
       </DialogContent>

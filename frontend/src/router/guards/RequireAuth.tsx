@@ -1,12 +1,13 @@
 import { Navigate, Outlet, useLocation } from "react-router";
 import { useAppSelector } from "@/app/hooks";
+import { SessionSkeleton } from "@/components/skeletons";
 
 export default function RequireAuth() {
   const {isAuthenticated, isBootstrapping } = useAppSelector((state) => state.auth);
   const location = useLocation();
   
   if (isBootstrapping) {
-    return <div>Loading...</div>;
+    return <SessionSkeleton />;
   }
 
   if (!isAuthenticated) {

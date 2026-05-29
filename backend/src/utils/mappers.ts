@@ -8,11 +8,19 @@ type EmergencyContactInput = {
   relationship?: string;
 };
 
-export const mapEmergencyContactToDb = (contact?: EmergencyContactInput) => ({
-  emergencyContactName: contact?.name,
-  emergencyContactPhone: contact?.phone,
-  emergencyContactRelationship: contact?.relationship,
-});
+export const mapEmergencyContactToDb = (contact?: EmergencyContactInput) => {
+  if (!contact) {
+    return {};
+  }
+
+  return {
+    ...(contact.name !== undefined ? { emergencyContactName: contact.name || null } : {}),
+    ...(contact.phone !== undefined ? { emergencyContactPhone: contact.phone || null } : {}),
+    ...(contact.relationship !== undefined
+      ? { emergencyContactRelationship: contact.relationship || null }
+      : {}),
+  };
+};
 
 export const mapEmergencyContactFromDb = (teacher: {
   emergencyContactName?: string | null;

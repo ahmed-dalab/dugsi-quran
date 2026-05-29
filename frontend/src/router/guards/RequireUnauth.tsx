@@ -1,5 +1,6 @@
 import { Navigate, Outlet } from "react-router";
 import { useAppSelector } from "@/app/hooks";
+import { SessionSkeleton } from "@/components/skeletons";
 
 export default function RequireUnauth() {
   const { isAuthenticated, isBootstrapping, user } = useAppSelector(
@@ -7,7 +8,7 @@ export default function RequireUnauth() {
   );
 
   if (isBootstrapping) {
-    return <div>Loading...</div>;
+    return <SessionSkeleton />;
   }
 
   if (isAuthenticated) {

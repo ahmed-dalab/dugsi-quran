@@ -5,19 +5,12 @@ import type { FeePayment } from "../types/fee.types";
 
 export interface CreateFeeRequest {
   studentId: string;
-  classId: string;
-  month: number;
-  year: number;
-  amountDue: number;
   amountPaid: number;
   paymentDate?: string | null;
   note?: string | null;
 }
 
 export interface UpdateFeeRequest {
-  month?: number;
-  year?: number;
-  amountDue?: number;
   amountPaid?: number;
   paymentDate?: string | null;
   note?: string | null;

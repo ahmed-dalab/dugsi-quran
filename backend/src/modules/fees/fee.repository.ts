@@ -57,6 +57,14 @@ export const feeRepository = {
     });
   },
 
+  findByStudentPeriod(studentId: string, month: number, year: number) {
+    return prisma.feePayment.findUnique({
+      where: {
+        studentId_month_year: { studentId, month, year },
+      },
+    });
+  },
+
   update(id: string, data: Prisma.FeePaymentUpdateInput) {
     return prisma.feePayment.update({
       where: { id },

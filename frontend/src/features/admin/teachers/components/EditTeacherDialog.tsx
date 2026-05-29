@@ -22,9 +22,10 @@ import {
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { AppSelect } from "@/components/ui/select";
+import { getApiErrorMessage, logDevError } from "@/lib/apiError";
 import { useUpdateTeacherMutation } from "../api/teacherApi";
 import type { Teacher } from "../types/teacher.types";
-import { createTeacherSchema } from "../schemas/createTeacherSchema";
+import { editTeacherSchema, type EditTeacherFormValues } from "../schemas/editTeacherSchema";
 
 interface EditTeacherDialogProps {
   teacher: Teacher;
@@ -41,8 +42,8 @@ export default function EditTeacherDialog({
   const userName = typeof teacher.userId === "string" ? "" : (teacher.userId as any).name;
   const userEmail = typeof teacher.userId === "string" ? "" : (teacher.userId as any).email;
 
-  const form = useForm({
-    resolver: zodResolver(createTeacherSchema),
+  const form = useForm<EditTeacherFormValues>({
+    resolver: zodResolver(editTeacherSchema),
     defaultValues: {
       name: userName,
       email: userEmail,
@@ -55,7 +56,7 @@ export default function EditTeacherDialog({
     },
   });
 
-  async function onSubmit(values: any) {
+  async function onSubmit(values: EditTeacherFormValues) {
     try {
       const payload = {
         ...values,
@@ -67,9 +68,9 @@ export default function EditTeacherDialog({
       const updatedTeacher = await updateTeacher({ id: teacher._id, body: payload }).unwrap();
       toast.success(`Teacher "${(updatedTeacher.data.userId as any).name}" updated successfully`);
       setOpen(false);
-    } catch (error: any) {
-      console.error("Update teacher failed:", error);
-      toast.error(error?.data?.message || "Failed to update teacher");
+    } catch (error: unknown) {
+      logDevError("Update teacher failed", error);
+      toast.error(getApiErrorMessage(error, "Failed to update teacher"));
     }
   }
 

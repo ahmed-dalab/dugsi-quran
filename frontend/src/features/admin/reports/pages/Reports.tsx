@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 
 import { useAppSelector } from "@/app/hooks";
+import { ReportsSkeleton } from "@/components/skeletons";
 import { useGetReportsOverviewQuery } from "../api/reportApi";
 
 const formatNumber = (value: number) => value.toLocaleString();
@@ -21,12 +22,8 @@ export default function Reports() {
     return Math.max(...data.data.monthlyCollections.map((item) => item.amount));
   }, [data?.data.monthlyCollections]);
 
-  if (isBootstrapping) {
-    return <div>Loading session...</div>;
-  }
-
-  if (isLoading) {
-    return <div>Loading reports...</div>;
+  if (isBootstrapping || isLoading) {
+    return <ReportsSkeleton />;
   }
 
   if (isError || !data?.data) {

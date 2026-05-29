@@ -1,7 +1,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Controller, useForm } from "react-hook-form";
 import { UserPlus } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { useGetClassesQuery } from "@/features/admin/classes/api/classApi";
@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { AppSelect } from "@/components/ui/select";
+import { getApiErrorMessage, logDevError } from "@/lib/apiError";
 import { useCreateStudentMutation } from "../api/studentApi";
 import {
   createStudentSchema,
@@ -41,7 +42,23 @@ export default function CreateStudentDialog({
 }: CreateStudentDialogProps) {
   const [open, setOpen] = useState(false);
   const [createStudent, { isLoading }] = useCreateStudentMutation();
-  const { data: classesData } = useGetClassesQuery(LIST_ALL_PARAMS);
+  const {
+    data: classesData,
+    isLoading: isClassesLoading,
+    isFetching: isClassesFetching,
+  } = useGetClassesQuery(
+    { ...LIST_ALL_PARAMS, isActive: true },
+    { skip: !open }
+  );
+
+  const classOptions = useMemo(
+    () =>
+      classesData?.data.map((classItem) => ({
+        value: classItem._id,
+        label: classItem.name,
+      })) ?? [],
+    [classesData?.data]
+  );
 
   const form = useForm<CreateStudentFormValues>({
     resolver: zodResolver(createStudentSchema),
@@ -78,9 +95,9 @@ export default function CreateStudentDialog({
         status: "active",
       });
       setOpen(false);
-    } catch (error: any) {
-      console.error("Create student failed:", error);
-      toast.error(error?.data?.message || "Failed to create student");
+    } catch (error: unknown) {
+      logDevError("Create student failed", error);
+      toast.error(getApiErrorMessage(error, "Failed to create student"));
     }
   }
 
@@ -146,18 +163,25 @@ export default function CreateStudentDialog({
               control={form.control}
               render={({ field, fieldState }) => (
                 <Field data-invalid={fieldState.invalid}>
-                  <FieldLabel>Class</FieldLabel>
+                  <FieldLabel htmlFor="student-class">Class</FieldLabel>
                   <AppSelect
-                    value={field.value}
-                    onChange={field.onChange}
+                    id="student-class"
+                    value={field.value || null}
+                    onChange={(value) => field.onChange(value ?? "")}
                     invalid={fieldState.invalid}
-                    placeholder="Search and select class"
-                    options={
-                      classesData?.data.map((classItem) => ({
-                        value: classItem._id,
-                        label: classItem.name,
-                      })) ?? []
+                    placeholder={
+                      isClassesLoading || isClassesFetching
+                        ? "Loading classes..."
+                        : "Search and select class"
                     }
+                    isLoading={isClassesLoading || isClassesFetching}
+                    isDisabled={isClassesLoading || isClassesFetching}
+                    noOptionsMessage={
+                      isClassesLoading || isClassesFetching
+                        ? "Loading classes..."
+                        : "No classes found. Create a class first."
+                    }
+                    options={classOptions}
                   />
                   {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
                 </Field>

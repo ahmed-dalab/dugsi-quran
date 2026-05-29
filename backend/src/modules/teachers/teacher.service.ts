@@ -1,34 +1,65 @@
 import type { Request } from "express";
 import bcrypt from "bcryptjs";
+import type { EmploymentType, TeacherGender, TeacherStatus } from "../../../generated/prisma";
 import { env } from "../../config/env";
 import { isValidId } from "../../utils/id";
 import { getQueryString, parsePaginationQuery } from "../../utils/pagination";
 import { mapTeacherRecord, toEmploymentType } from "../../utils/mappers";
-import type { ITeacher } from "./teacher.model";
 import { teacherRepository } from "./teacher.repository";
 
-type CreateTeacherPayload = Omit<ITeacher, "userId"> & {
+type EmergencyContactPayload = {
+  name?: string;
+  phone?: string;
+  relationship?: string;
+};
+
+type CreateTeacherPayload = {
   name: string;
   email: string;
   password: string;
+  phone?: string | null;
+  address?: string | null;
+  gender?: TeacherGender;
+  dateOfBirth?: Date | null;
+  hireDate?: Date;
+  qualification?: string | null;
+  specialization?: string | null;
+  experience?: string | null;
+  salary?: number | null;
+  employmentType?: "full-time" | "part-time" | "volunteer";
+  status: TeacherStatus;
+  emergencyContact?: EmergencyContactPayload;
 };
 
-type UpdateTeacherPayload = Partial<Omit<ITeacher, "userId">> & {
-  name?: string;
-  email?: string;
-  password?: string;
-};
+type UpdateTeacherPayload = Partial<CreateTeacherPayload>;
 
 export const createTeacherService = async (payload: CreateTeacherPayload) => {
-  const { name, email, password, ...teacherData } = payload;
+  const {
+    name,
+    email,
+    password,
+    employmentType,
+    emergencyContact,
+    hireDate,
+    ...teacherData
+  } = payload;
   const hashedPassword = await bcrypt.hash(password, env.HASH_SALT_ROUNDS);
 
   const teacher = await teacherRepository.createWithUser({
     user: { name, email, password: hashedPassword },
     teacher: {
-      ...teacherData,
-      employmentType: toEmploymentType(teacherData.employmentType) ?? "full_time",
+      phone: teacherData.phone ?? null,
+      address: teacherData.address ?? null,
+      gender: teacherData.gender,
+      dateOfBirth: teacherData.dateOfBirth ?? null,
+      hireDate: hireDate ?? new Date(),
+      qualification: teacherData.qualification ?? null,
+      specialization: teacherData.specialization ?? null,
+      experience: teacherData.experience ?? null,
+      salary: teacherData.salary ?? null,
+      employmentType: (toEmploymentType(employmentType) ?? "full_time") as EmploymentType,
       status: teacherData.status ?? "active",
+      emergencyContact,
     },
   });
 
@@ -65,7 +96,8 @@ export const updateTeacherService = async (id: string, payload: UpdateTeacherPay
     return null;
   }
 
-  const { name, email, password, employmentType, emergencyContact, ...teacherData } = payload;
+  const { name, email, password, employmentType, emergencyContact, hireDate, ...teacherData } =
+    payload;
   const userData: { name?: string; email?: string; password?: string } = {};
 
   if (name) userData.name = name;
@@ -77,8 +109,23 @@ export const updateTeacherService = async (id: string, payload: UpdateTeacherPay
   const updatedTeacher = await teacherRepository.updateWithUser(
     id,
     {
-      ...teacherData,
-      ...(employmentType ? { employmentType: toEmploymentType(employmentType) } : {}),
+      ...(teacherData.phone !== undefined ? { phone: teacherData.phone } : {}),
+      ...(teacherData.address !== undefined ? { address: teacherData.address } : {}),
+      ...(teacherData.gender !== undefined ? { gender: teacherData.gender } : {}),
+      ...(teacherData.dateOfBirth !== undefined ? { dateOfBirth: teacherData.dateOfBirth } : {}),
+      ...(hireDate !== undefined ? { hireDate } : {}),
+      ...(teacherData.qualification !== undefined
+        ? { qualification: teacherData.qualification }
+        : {}),
+      ...(teacherData.specialization !== undefined
+        ? { specialization: teacherData.specialization }
+        : {}),
+      ...(teacherData.experience !== undefined ? { experience: teacherData.experience } : {}),
+      ...(teacherData.salary !== undefined ? { salary: teacherData.salary } : {}),
+      ...(teacherData.status !== undefined ? { status: teacherData.status } : {}),
+      ...(employmentType
+        ? { employmentType: toEmploymentType(employmentType) as EmploymentType }
+        : {}),
       emergencyContact,
     },
     Object.keys(userData).length > 0 ? userData : undefined

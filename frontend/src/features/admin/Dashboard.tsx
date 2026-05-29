@@ -1,5 +1,6 @@
 import { useAppSelector } from "@/app/hooks";
-import { ErrorMessage, LoadingMessage } from "@/components/ui/loading-message";
+import { DashboardSkeleton } from "@/components/skeletons";
+import { ErrorMessage } from "@/components/ui/loading-message";
 import { PageHeader } from "@/components/ui/page-header";
 import { chartColors, getChartColor } from "@/design-system/tokens";
 import { useGetDashboardStatsQuery } from "./dashboard/api/dashboardApi";
@@ -15,12 +16,8 @@ function AdminDashboardPage() {
     skip: isBootstrapping || !accessToken,
   });
 
-  if (isBootstrapping) {
-    return <LoadingMessage message="Loading session..." />;
-  }
-
-  if (isLoading) {
-    return <LoadingMessage message="Loading dashboard..." />;
+  if (isBootstrapping || isLoading) {
+    return <DashboardSkeleton />;
   }
 
   if (isError || !data) {

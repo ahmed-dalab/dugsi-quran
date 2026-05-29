@@ -1,7 +1,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Controller, useForm } from "react-hook-form";
 import { Edit } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { useGetClassesQuery } from "@/features/admin/classes/api/classApi";
@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { AppSelect } from "@/components/ui/select";
+import { getApiErrorMessage, logDevError } from "@/lib/apiError";
 import { useUpdateStudentMutation } from "../api/studentApi";
 import { editStudentSchema, type EditStudentFormValues } from "../schemas/editStudentSchema";
 import type { Student } from "../types/student.types";
@@ -41,7 +42,23 @@ export default function EditStudentDialog({
 }: EditStudentDialogProps) {
   const [open, setOpen] = useState(false);
   const [updateStudent, { isLoading }] = useUpdateStudentMutation();
-  const { data: classesData } = useGetClassesQuery(LIST_ALL_PARAMS);
+  const {
+    data: classesData,
+    isLoading: isClassesLoading,
+    isFetching: isClassesFetching,
+  } = useGetClassesQuery(
+    { ...LIST_ALL_PARAMS, isActive: true },
+    { skip: !open }
+  );
+
+  const classOptions = useMemo(
+    () =>
+      classesData?.data.map((classItem) => ({
+        value: classItem._id,
+        label: classItem.name,
+      })) ?? [],
+    [classesData?.data]
+  );
 
   const classId =
     typeof student.classId === "string" ? student.classId : student.classId._id;
@@ -90,9 +107,9 @@ export default function EditStudentDialog({
 
       toast.success(`Student "${updatedStudent.data.fullName}" updated successfully`);
       setOpen(false);
-    } catch (error: any) {
-      console.error("Update student failed:", error);
-      toast.error(error?.data?.message || "Failed to update student");
+    } catch (error: unknown) {
+      logDevError("Update student failed", error);
+      toast.error(getApiErrorMessage(error, "Failed to update student"));
     }
   }
 
@@ -158,18 +175,25 @@ export default function EditStudentDialog({
               control={form.control}
               render={({ field, fieldState }) => (
                 <Field data-invalid={fieldState.invalid}>
-                  <FieldLabel>Class</FieldLabel>
+                  <FieldLabel htmlFor="edit-student-class">Class</FieldLabel>
                   <AppSelect
-                    value={field.value}
-                    onChange={field.onChange}
+                    id="edit-student-class"
+                    value={field.value || null}
+                    onChange={(value) => field.onChange(value ?? "")}
                     invalid={fieldState.invalid}
-                    placeholder="Search and select class"
-                    options={
-                      classesData?.data.map((classItem) => ({
-                        value: classItem._id,
-                        label: classItem.name,
-                      })) ?? []
+                    placeholder={
+                      isClassesLoading || isClassesFetching
+                        ? "Loading classes..."
+                        : "Search and select class"
                     }
+                    isLoading={isClassesLoading || isClassesFetching}
+                    isDisabled={isClassesLoading || isClassesFetching}
+                    noOptionsMessage={
+                      isClassesLoading || isClassesFetching
+                        ? "Loading classes..."
+                        : "No classes found. Create a class first."
+                    }
+                    options={classOptions}
                   />
                   {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
                 </Field>

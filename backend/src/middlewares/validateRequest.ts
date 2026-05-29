@@ -2,6 +2,17 @@ import type { Request, Response, NextFunction } from "express";
 import * as z from "zod";
 import { AppError } from "../shared/errors/AppError";
 
+const applyValidatedRecord = (
+  target: Record<string, unknown>,
+  source: Record<string, unknown> | undefined
+) => {
+  if (!source || Object.keys(source).length === 0) {
+    return;
+  }
+
+  Object.assign(target, source);
+};
+
 export const validateRequest =
   (schema: z.ZodType<any>) =>
   (req: Request, _res: Response, next: NextFunction) => {
@@ -24,13 +35,8 @@ export const validateRequest =
       req.body = result.data.body;
     }
 
-    if (result.data.params !== undefined) {
-      req.params = result.data.params;
-    }
-
-    if (result.data.query !== undefined) {
-      req.query = result.data.query;
-    }
+    applyValidatedRecord(req.params as Record<string, unknown>, result.data.params);
+    applyValidatedRecord(req.query as Record<string, unknown>, result.data.query);
 
     next();
   };

@@ -4,6 +4,7 @@ import { Edit } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
+import { getApiErrorMessage, logDevError } from "@/lib/apiError";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -25,16 +26,22 @@ interface EditFeeDialogProps {
   triggerClassName?: string;
 }
 
+const formatCurrency = (value: number) =>
+  `$${value.toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
+
+const formatPeriod = (month: number, year: number) =>
+  new Date(year, month - 1, 1).toLocaleString(undefined, { month: "long", year: "numeric" });
+
 export default function EditFeeDialog({ fee, triggerClassName }: EditFeeDialogProps) {
   const [open, setOpen] = useState(false);
   const [updateFee, { isLoading }] = useUpdateFeeMutation();
 
+  const studentName = typeof fee.studentId === "string" ? "-" : fee.studentId.fullName;
+  const className = typeof fee.classId === "string" ? "-" : fee.classId.name;
+
   const form = useForm<EditFeeFormValues>({
     resolver: zodResolver(editFeeSchema),
     defaultValues: {
-      month: fee.month,
-      year: fee.year,
-      amountDue: fee.amountDue,
       amountPaid: fee.amountPaid,
       paymentDate: fee.paymentDate ? fee.paymentDate.slice(0, 10) : "",
       note: fee.note ?? "",
@@ -45,9 +52,6 @@ export default function EditFeeDialog({ fee, triggerClassName }: EditFeeDialogPr
     if (!open) return;
 
     form.reset({
-      month: fee.month,
-      year: fee.year,
-      amountDue: fee.amountDue,
       amountPaid: fee.amountPaid,
       paymentDate: fee.paymentDate ? fee.paymentDate.slice(0, 10) : "",
       note: fee.note ?? "",
@@ -56,15 +60,15 @@ export default function EditFeeDialog({ fee, triggerClassName }: EditFeeDialogPr
 
   async function onSubmit(values: EditFeeFormValues) {
     try {
-      if (values.amountPaid > values.amountDue) {
-        toast.error("Amount paid cannot exceed amount due");
+      if (values.amountPaid > fee.amountDue) {
+        toast.error("Amount paid cannot exceed the class monthly fee");
         return;
       }
 
       await updateFee({
         id: fee._id,
         body: {
-          ...values,
+          amountPaid: values.amountPaid,
           paymentDate: values.amountPaid > 0 ? values.paymentDate : null,
           note: values.note?.trim() ? values.note.trim() : null,
         },
@@ -72,9 +76,9 @@ export default function EditFeeDialog({ fee, triggerClassName }: EditFeeDialogPr
 
       toast.success("Fee payment updated successfully");
       setOpen(false);
-    } catch (error: any) {
-      console.error("Update fee failed:", error);
-      toast.error(error?.data?.message || "Failed to update fee payment");
+    } catch (error: unknown) {
+      logDevError("Update fee failed", error);
+      toast.error(getApiErrorMessage(error, "Failed to update fee payment"));
     }
   }
 
@@ -90,89 +94,43 @@ export default function EditFeeDialog({ fee, triggerClassName }: EditFeeDialogPr
       <DialogContent className="max-w-[calc(100%-1rem)] sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Edit Fee Payment</DialogTitle>
-          <DialogDescription>Update monthly fee details.</DialogDescription>
+          <DialogDescription>Update the payment amount or note for this fee record.</DialogDescription>
         </DialogHeader>
 
         <form id="edit-fee-form" onSubmit={form.handleSubmit(onSubmit)}>
           <FieldGroup>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <Controller
-                name="month"
-                control={form.control}
-                render={({ field, fieldState }) => (
-                  <Field data-invalid={fieldState.invalid}>
-                    <FieldLabel htmlFor="edit-fee-month">Month</FieldLabel>
-                    <Input
-                      {...field}
-                      id="edit-fee-month"
-                      type="number"
-                      min={1}
-                      max={12}
-                      onChange={(event) => field.onChange(event.target.valueAsNumber)}
-                    />
-                    {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-                  </Field>
-                )}
-              />
-
-              <Controller
-                name="year"
-                control={form.control}
-                render={({ field, fieldState }) => (
-                  <Field data-invalid={fieldState.invalid}>
-                    <FieldLabel htmlFor="edit-fee-year">Year</FieldLabel>
-                    <Input
-                      {...field}
-                      id="edit-fee-year"
-                      type="number"
-                      min={2000}
-                      onChange={(event) => field.onChange(event.target.valueAsNumber)}
-                    />
-                    {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-                  </Field>
-                )}
-              />
+            <div className="rounded-xl border border-border bg-muted/40 p-4 text-sm">
+              <p className="font-medium">{studentName}</p>
+              <p className="mt-1 text-muted-foreground">
+                Class: <span className="text-foreground">{className}</span>
+              </p>
+              <p className="text-muted-foreground">
+                Period: <span className="text-foreground">{formatPeriod(fee.month, fee.year)}</span>
+              </p>
+              <p className="text-muted-foreground">
+                Class fee:{" "}
+                <span className="font-medium text-foreground">{formatCurrency(fee.amountDue)}</span>
+              </p>
             </div>
 
-            <div className="grid gap-4 sm:grid-cols-2">
-              <Controller
-                name="amountDue"
-                control={form.control}
-                render={({ field, fieldState }) => (
-                  <Field data-invalid={fieldState.invalid}>
-                    <FieldLabel htmlFor="edit-fee-amount-due">Amount Due</FieldLabel>
-                    <Input
-                      {...field}
-                      id="edit-fee-amount-due"
-                      type="number"
-                      min={0}
-                      step="0.01"
-                      onChange={(event) => field.onChange(event.target.valueAsNumber)}
-                    />
-                    {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-                  </Field>
-                )}
-              />
-
-              <Controller
-                name="amountPaid"
-                control={form.control}
-                render={({ field, fieldState }) => (
-                  <Field data-invalid={fieldState.invalid}>
-                    <FieldLabel htmlFor="edit-fee-amount-paid">Amount Paid</FieldLabel>
-                    <Input
-                      {...field}
-                      id="edit-fee-amount-paid"
-                      type="number"
-                      min={0}
-                      step="0.01"
-                      onChange={(event) => field.onChange(event.target.valueAsNumber)}
-                    />
-                    {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-                  </Field>
-                )}
-              />
-            </div>
+            <Controller
+              name="amountPaid"
+              control={form.control}
+              render={({ field, fieldState }) => (
+                <Field data-invalid={fieldState.invalid}>
+                  <FieldLabel htmlFor="edit-fee-amount-paid">Amount Paid</FieldLabel>
+                  <Input
+                    {...field}
+                    id="edit-fee-amount-paid"
+                    type="number"
+                    min={0}
+                    step="0.01"
+                    onChange={(event) => field.onChange(event.target.valueAsNumber)}
+                  />
+                  {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                </Field>
+              )}
+            />
 
             <Controller
               name="paymentDate"
@@ -202,7 +160,7 @@ export default function EditFeeDialog({ fee, triggerClassName }: EditFeeDialogPr
 
         <DialogFooter>
           <Button type="submit" form="edit-fee-form" disabled={isLoading} className="w-full sm:w-auto">
-            {isLoading ? "Updating..." : "Update Fee"}
+            {isLoading ? "Updating..." : "Update Payment"}
           </Button>
         </DialogFooter>
       </DialogContent>

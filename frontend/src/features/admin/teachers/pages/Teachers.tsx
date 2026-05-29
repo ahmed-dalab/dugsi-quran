@@ -1,4 +1,5 @@
 import { useAppSelector } from "@/app/hooks";
+import { ListPageSkeleton } from "@/components/skeletons";
 import ListSearch from "@/components/common/ListSearch";
 import TablePagination from "@/components/common/TablePagination";
 import { useListQueryState } from "@/hooks/useListQueryState";
@@ -14,12 +15,8 @@ export default function Teachers() {
     skip: isBootstrapping || !accessToken,
   });
 
-  if (isBootstrapping) {
-    return <div>Loading session...</div>;
-  }
-
-  if (isLoading) {
-    return <div>Loading teachers...</div>;
+  if (isBootstrapping || isLoading) {
+    return <ListPageSkeleton columns={6} />;
   }
 
   if (isError) {

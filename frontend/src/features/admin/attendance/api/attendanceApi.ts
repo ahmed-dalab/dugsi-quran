@@ -23,7 +23,7 @@ export interface AttendanceResponse {
 export type AttendanceHistoryResponse = PaginatedResponse<Attendance>;
 
 export type AttendanceHistoryParams = ListQueryParams & {
-  classId: string;
+  classId?: string;
 };
 
 export const attendanceApi = baseApi.injectEndpoints({
@@ -35,6 +35,14 @@ export const attendanceApi = baseApi.injectEndpoints({
         body,
       }),
       invalidatesTags: ["Attendance"],
+    }),
+    getAttendanceList: builder.query<AttendanceHistoryResponse, ListQueryParams | void>({
+      query: (params) => ({
+        url: "/attendance/",
+        method: "GET",
+        params: toListQueryParams(params ?? undefined),
+      }),
+      providesTags: ["Attendance"],
     }),
     getAttendanceByClassAndDate: builder.query<
       AttendanceResponse,
@@ -61,6 +69,7 @@ export const attendanceApi = baseApi.injectEndpoints({
 
 export const {
   useTakeAttendanceMutation,
+  useGetAttendanceListQuery,
   useGetAttendanceByClassAndDateQuery,
   useLazyGetAttendanceByClassAndDateQuery,
   useGetAttendanceHistoryByClassQuery,
